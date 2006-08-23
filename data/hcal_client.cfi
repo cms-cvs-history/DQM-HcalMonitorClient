@@ -1,0 +1,24 @@
+process CLIENT = {
+
+      module hcalClient =  HcalMonitorClient{
+        untracked string clientName = "HcalMonitorClient"
+        untracked string hostName = "localhost"
+        untracked int32  hostPort = 9090
+	untracked string outputFile = 'HcalMonitorClient.root'
+        untracked bool enableSubRun = false
+        untracked string location = "H4"
+        untracked string baseHtmlDir = "."
+	untracked int32 updateFrequency = 1000
+        untracked bool collateSources = false
+        untracked bool cloneME = false
+	untracked bool enableExit = true
+        untracked bool verbose = false
+      }
+
+      path p = { hcalClient }
+
+      source = DummySource{
+        untracked int32 maxEvents = -1
+      }
+
+}

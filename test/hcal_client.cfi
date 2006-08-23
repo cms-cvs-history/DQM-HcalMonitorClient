@@ -1,0 +1,51 @@
+process CLIENT = {
+
+      module hcalClient =  HcalMonitorClient{
+	untracked string clientName = "HcalMonitorClient"
+        untracked string hostName = "cmsroc2.fnal.gov"
+        untracked int32  hostPort = 9090
+	untracked string outputFile = 'HcalMonitorClient.root'
+        untracked bool enableSubRun = false
+        untracked string location = "H2"
+        untracked string baseHtmlDir = "."
+	untracked int32 updateFrequency = 10
+        untracked bool collateSources = false
+        untracked bool cloneME = false
+	untracked bool enableExit = false
+        untracked bool verbose = false
+	untracked string processName = 'HcalMonitor'
+	
+	untracked bool DataFormatClient =  true
+	untracked bool TestBeamClient =  false
+	untracked bool RecHitClient =  true
+	untracked bool DigiClient =  true
+	
+	untracked bool LEDClient =  true
+	untracked double LEDRMS_ErrThresh = 0.8
+	untracked double LEDMEAN_ErrThresh = 2.25
+
+	untracked bool PedestalClient =  true
+	untracked double PedestalRMS_ErrThresh = 1
+	untracked double PedestalMean_ErrThresh = 2
+	untracked double CapIdRMS_ErrThresh = 0.25
+	untracked double CapIdMEAN_ErrThresh = 1.5
+
+      }
+
+      path p = { hcalClient }
+
+      source = DummySource{
+        untracked int32 maxEvents = -1
+      }
+
+  es_module = HcalDbProducer {}
+
+  es_source es_hardcode = HcalHardcodeCalibrations { untracked vstring toGet = {"Pedestals", "PedestalWidths", "Gains", "GainWidths", "QIEShape", "QIEData", "ChannelQuality"}}
+
+  es_source es_ascii = HcalTextCalibrations { VPSet input = {
+                                              {string object = "ElectronicsMap"
+						FileInPath file = "DQM/HcalMonitorModule/test/emap_mtcc_hbheho_yb2crate0_aug4.txt"
+                                              }
+                }
+        }	
+}
