@@ -3,11 +3,11 @@ process CLIENT = {
 
       module hcalClient =  HcalMonitorClient{
 	untracked string clientName = "HcalMonitorClient"
-        untracked string hostName = "cmsroc2.fnal.gov"
+        untracked string hostName = "localhost"
         untracked int32  hostPort = 9090
 	untracked string outputFile = 'HcalMonitorClient.root'
         untracked bool enableSubRun = false
-        untracked string location = "WH11"
+        untracked string location = "H2"
         untracked string baseHtmlDir = "."
 	untracked int32 updateFrequency = 100
         untracked bool collateSources = false
