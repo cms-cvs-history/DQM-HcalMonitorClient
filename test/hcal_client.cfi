@@ -1,3 +1,4 @@
+
 process CLIENT = {
 
       module hcalClient =  HcalMonitorClient{
@@ -6,9 +7,9 @@ process CLIENT = {
         untracked int32  hostPort = 9090
 	untracked string outputFile = 'HcalMonitorClient.root'
         untracked bool enableSubRun = false
-        untracked string location = "H2"
+        untracked string location = "WH11"
         untracked string baseHtmlDir = "."
-	untracked int32 updateFrequency = 10
+	untracked int32 updateFrequency = 100
         untracked bool collateSources = false
         untracked bool cloneME = false
 	untracked bool enableExit = false
@@ -16,15 +17,15 @@ process CLIENT = {
 	untracked string processName = 'HcalMonitor'
 	
 	untracked bool DataFormatClient =  true
-	untracked bool TestBeamClient =  false
+	untracked bool TestBeamClient =  true
 	untracked bool RecHitClient =  true
 	untracked bool DigiClient =  true
 	
-	untracked bool LEDClient =  true
+	untracked bool LEDClient =  false
 	untracked double LEDRMS_ErrThresh = 0.8
 	untracked double LEDMEAN_ErrThresh = 2.25
 
-	untracked bool PedestalClient =  true
+	untracked bool PedestalClient =  false
 	untracked double PedestalRMS_ErrThresh = 1
 	untracked double PedestalMean_ErrThresh = 2
 	untracked double CapIdRMS_ErrThresh = 0.25
@@ -44,7 +45,8 @@ process CLIENT = {
 
   es_source es_ascii = HcalTextCalibrations { VPSet input = {
                                               {string object = "ElectronicsMap"
-						FileInPath file = "DQM/HcalMonitorModule/test/emap_mtcc_hbheho_yb2crate0_aug4.txt"
+//						FileInPath file = "DQM/HcalMonitorModule/test/emap_mtcc_hbheho_yb2crate0_aug4.txt"
+						FileInPath file = "DQM/HcalMonitorModule/test/emap_tb06_v5.txt"
                                               }
                 }
         }	
