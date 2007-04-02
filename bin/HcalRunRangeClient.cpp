@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
 	runNum=-1;
 	HcalMonitorClient monc;
 	monc.offlineSetup();
-	monc.loadHistograms(infile);
+	monc.loadHistograms(infile,line.c_str());
 	monc.dumpHistograms(runNum,hist1d,hist2d);
 	if(!init){
 	  outfile.cd();
