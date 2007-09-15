@@ -1,6 +1,0 @@
-<bin file=HcalOfflineClient.cpp>
-<use name=DQM/HcalMonitorClient>
-</bin>
-<bin file=HcalRunRangeClient.cpp>
-<use name=DQM/HcalMonitorClient>
-</bin>
