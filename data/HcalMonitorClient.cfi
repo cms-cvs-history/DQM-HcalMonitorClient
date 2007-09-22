@@ -1,16 +1,16 @@
   
     module hcalClient =  HcalMonitorClient{
-       untracked string clientName = 'HcalMonitorClient'
-        untracked string hostName = 'cmshcal01'
+       untracked string clientName = 'HcalClient'
+        untracked string hostName = 'localhost'
         untracked int32  hostPort = 9090
         untracked string outputFile = 'HcalMonitorClient.root'
         untracked string inputFile = ""
 	
 	untracked string baseHtmlDir = '/tmp/'
-#        untracked string processName = 'Collector/HcalMonitor/'
-	untracked string processName = "Collector/FU0/"
+        untracked string processName = ""
+#	untracked string processName = "Collector/FU0/"
 	untracked bool enableMonitorDaemon = true
-	untracked bool enableServer = true
+	untracked bool enableServer = false
    	untracked int32 serverPort = 9090
 
         untracked bool enableSubRun = false
@@ -26,9 +26,8 @@
         untracked int32 outputFreqEvts = 500
 	untracked int32 Timeout = 100
 
-        untracked bool TestBeamClient =  false
-        untracked bool DataFormatClient = false
-        untracked bool DigiClient = false
+        untracked bool DataFormatClient = true
+        untracked bool DigiClient = true
         untracked bool RecHitClient = false
         untracked bool HotCellClient = false
 
