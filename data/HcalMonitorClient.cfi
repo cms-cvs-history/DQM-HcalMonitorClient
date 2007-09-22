@@ -1,6 +1,9 @@
   
     module hcalClient =  HcalMonitorClient{
        untracked string clientName = 'HcalClient'
+        untracked bool runningStandalone = true
+        untracked int32 diagnosticPrescale = 100
+
         untracked string hostName = 'localhost'
         untracked int32  hostPort = 9090
         untracked string outputFile = 'HcalMonitorClient.root'
@@ -19,6 +22,7 @@
         untracked bool enableExit = false
         untracked bool verbose = false
 
+	untracked int32 prescaleFactor = 100
         untracked int32 resetFreqUpdates = -1
         untracked int32 resetFreqEvents = 501
         untracked int32 resetFreqTime = -1
