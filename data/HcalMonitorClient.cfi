@@ -1,41 +1,39 @@
-  
-    module hcalClient =  HcalMonitorClient{
-       untracked string clientName = 'HcalClient'
-        untracked bool runningStandalone = true
-        untracked int32 diagnosticPrescale = 100
 
-        untracked string hostName = 'localhost'
-        untracked int32  hostPort = 9090
-        untracked string outputFile = 'HcalMonitorClient.root'
+	module hcalClient =  HcalMonitorClient{
+		untracked bool MonitorDaemon = true
+		untracked bool debug = false
+
+	       # set this flag true to disable writing a ROOT output file
+	       untracked bool disableROOToutput = false
+		untracked string monitorName = "Hcal"
+
+       untracked string clientName = 'HcalClient'
+        untracked bool runningStandalone = false
         untracked string inputFile = ""
 	
+	untracked int32 diagnosticPrescaleEvt = 100
+
 	untracked string baseHtmlDir = '/tmp/'
         untracked string processName = ""
 #	untracked string processName = "Collector/FU0/"
-	untracked bool enableMonitorDaemon = true
-	untracked bool enableServer = false
-   	untracked int32 serverPort = 9090
 
         untracked bool enableSubRun = false
-        untracked bool collateSources = false
-        untracked bool cloneME = false
         untracked bool enableExit = false
-        untracked bool verbose = false
 
-	untracked int32 prescaleFactor = 100
         untracked int32 resetFreqUpdates = -1
         untracked int32 resetFreqEvents = 20001
         untracked int32 resetFreqTime = -1
         untracked int32 updateFrequency = 10
+
         untracked int32 outputFreqEvts = 5000
 	untracked int32 Timeout = 100
 
-        untracked bool DataFormatClient = false
-        untracked bool DigiClient = false
+        untracked bool DataFormatClient = true
+        untracked bool DigiClient = true
         untracked bool RecHitClient = true
-        untracked bool HotCellClient = false
+        untracked bool HotCellClient = true
 
-        untracked bool LEDClient = false
+        untracked bool LEDClient = true
         untracked double LEDRMS_ErrThresh = 0.8
         untracked double LEDMEAN_ErrThresh = 2.25
 
