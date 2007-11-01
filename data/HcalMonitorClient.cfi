@@ -30,7 +30,7 @@
 		untracked string inputFile = ""
 
 		# Directory for HTML output
-		untracked string baseHtmlDir = '.'
+		untracked string baseHtmlDir = ''
 
 		# Do you want this program to exit at the end of a run?
         	untracked bool enableExit = false
