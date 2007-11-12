@@ -4,7 +4,7 @@
 		untracked bool MonitorDaemon = true
 	       	
 		# Verbosity Switch
-		untracked bool debug = false
+		untracked bool debug = true
 
 		# set this flag true to disable writing a ROOT output file
 		untracked bool disableROOToutput = false
@@ -30,7 +30,7 @@
 		untracked string inputFile = ""
 
 		# Directory for HTML output
-		untracked string baseHtmlDir = ''
+		untracked string baseHtmlDir = '.'
 
 		# Do you want this program to exit at the end of a run?
         	untracked bool enableExit = false
@@ -46,6 +46,7 @@
 	        untracked bool DigiClient = true
 	        untracked bool RecHitClient = true
 	        untracked bool HotCellClient = true
+	        untracked bool DeadCellClient = true
 
 	        untracked bool LEDClient = true
         	untracked double LEDRMS_ErrThresh = 0.8
