@@ -6,16 +6,11 @@
 		# Verbosity Switch
 		untracked bool debug = true
 
-		# set this flag true to disable writing a ROOT output file
-		untracked bool disableROOToutput = false
-
-		# Base name for monitor folders and output file		
-		untracked string monitorName = "Hcal"
 		untracked string processName = ""
 
 		# Choices for prescaling your module (-1 mean no prescale)
 		# Operate every N events
-		untracked int32 diagnosticPrescaleEvt = 500
+		untracked int32 diagnosticPrescaleEvt = 250
 		# Operate every N lumi sections
 		untracked int32 diagnosticPrescaleLS  = -1
 		# Operate every N minutes
@@ -30,7 +25,8 @@
 		untracked string inputFile = ""
 
 		# Directory for HTML output
-		untracked string baseHtmlDir = '.'
+                # Disabled if set to ""
+		untracked string baseHtmlDir = ''
 
 		# Do you want this program to exit at the end of a run?
         	untracked bool enableExit = false
