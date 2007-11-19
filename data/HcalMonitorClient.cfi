@@ -25,8 +25,10 @@
 		untracked string inputFile = ""
 
 		# Directory for HTML output
+
                 # Disabled if set to ""
 		untracked string baseHtmlDir = ''
+
 
 		# Do you want this program to exit at the end of a run?
         	untracked bool enableExit = false
@@ -59,4 +61,6 @@
 
 		#Which subdetectors are present?
 	        untracked vstring subDetsOn = {'HB', 'HE', 'HF', 'HO'}
+                # Number of thresholds to be used by hot cell client
+                untracked int32 HotCellThresholds=5
       }
