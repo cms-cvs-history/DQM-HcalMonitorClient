@@ -10,7 +10,7 @@
 
 		# Choices for prescaling your module (-1 mean no prescale)
 		# Operate every N events
-		untracked int32 diagnosticPrescaleEvt = 250
+		untracked int32 diagnosticPrescaleEvt = 200
 		# Operate every N lumi sections
 		untracked int32 diagnosticPrescaleLS  = -1
 		# Operate every N minutes
