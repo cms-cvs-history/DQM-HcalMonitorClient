@@ -41,17 +41,17 @@
 		# Analysis jobs to be run
 	    untracked bool DataFormatClient = true
 	    untracked bool DigiClient = true
-	    untracked bool RecHitClient = true
-	    untracked bool HotCellClient = true
+	    untracked bool RecHitClient = false
+	    untracked bool HotCellClient = false
         # Number of thresholds to be used by hot cell client
         untracked int32 HotCellThresholds=5
-	    untracked bool DeadCellClient = true
+	    untracked bool DeadCellClient = false
 
-	    untracked bool LEDClient = true
+	    untracked bool LEDClient = false
         untracked double LEDRMS_ErrThresh = 0.8
 	    untracked double LEDMEAN_ErrThresh = 2.25
 
-        untracked bool PedestalClient = true
+        untracked bool PedestalClient = false
 	    untracked bool plotPedRAW = false
 	    untracked double PedestalRMS_ErrThresh = 1
 	    untracked double PedestalMean_ErrThresh = 2
