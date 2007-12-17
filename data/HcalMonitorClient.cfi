@@ -61,7 +61,7 @@
 	    untracked bool DoPerChanTests = true
 
 		#Flags for TPG monitor
-		untracked bool TrigPrimMonitor = true
+		untracked bool TrigPrimClient = true
 
 		#Which subdetectors are present?
 	    untracked vstring subDetsOn = {'HB', 'HE', 'HF', 'HO'}
