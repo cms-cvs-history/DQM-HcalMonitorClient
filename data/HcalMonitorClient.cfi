@@ -43,9 +43,7 @@
 	    untracked bool DigiClient = true
 	    untracked bool RecHitClient = true
 	    untracked bool HotCellClient = true
-        # Number of thresholds to be used by hot cell client
-        untracked int32 HotCellThresholds=5
-	    untracked bool DeadCellClient = true
+       	    untracked bool DeadCellClient = true
 
 	    untracked bool LEDClient = true
         untracked double LEDRMS_ErrThresh = 0.8
