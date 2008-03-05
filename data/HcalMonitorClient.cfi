@@ -44,6 +44,8 @@
 	    untracked bool RecHitClient = true
 	    untracked bool HotCellClient = true
        	    untracked bool DeadCellClient = true
+            # for the moment, don't run CaloTowerClient unless explicitly requested
+            untracked bool CaloTowerClient = false
 
 	    untracked bool LEDClient = true
         untracked double LEDRMS_ErrThresh = 0.8
