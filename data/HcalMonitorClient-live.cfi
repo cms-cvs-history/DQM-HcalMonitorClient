@@ -45,6 +45,8 @@
 	    untracked bool HotCellClient = false
             # Number of thresholds to be used by hot cell client
 	    untracked bool DeadCellClient = false
+            # for the moment, don't run CaloTowerClient unless explicitly requested
+            untracked bool CaloTowerClient = false
 
 	    untracked bool LEDClient = false
             untracked double LEDRMS_ErrThresh = 0.8
