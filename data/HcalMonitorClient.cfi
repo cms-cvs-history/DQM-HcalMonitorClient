@@ -58,7 +58,7 @@
 	    untracked double CapIdRMS_ErrThresh = 0.25
 	    untracked double CapIdMEAN_ErrThresh = 1.5
 
-	    untracked bool DoPerChanTests = true
+	    untracked bool DoPerChanTests = false
 
 		#Flags for TPG monitor
 		untracked bool TrigPrimClient = true
