@@ -25,44 +25,44 @@
 		untracked string inputFile = ""
 
 		# Directory for HTML output
-        # Disabled if set to ""
+         	# Disabled if set to ""
 		untracked string baseHtmlDir = '.'
 
 
 		# Do you want this program to exit at the end of a run?
-        untracked bool enableExit = false
+        	untracked bool enableExit = false
 
 		# Reset histograms on these frequencies
-	    untracked int32 resetFreqUpdates = -1
-	    untracked int32 resetFreqLS = -1
-        untracked int32 resetFreqEvents = -1
-	    untracked int32 resetFreqTime = -1
+	    	untracked int32 resetFreqUpdates = -1
+	    	untracked int32 resetFreqLS = -1
+        	untracked int32 resetFreqEvents = -1
+	    	untracked int32 resetFreqTime = -1
 
 		# Analysis jobs to be run
-	    untracked bool DataFormatClient = true
-	    untracked bool DigiClient = true
-	    untracked bool RecHitClient = true
-	    untracked bool HotCellClient = true
-       	    untracked bool DeadCellClient = true
-            # for the moment, don't run CaloTowerClient unless explicitly requested
-            untracked bool CaloTowerClient = false
+	    	untracked bool DataFormatClient = true
+	    	untracked bool DigiClient = true
+	    	untracked bool RecHitClient = true
+	    	untracked bool HotCellClient = true
+       	    	untracked bool DeadCellClient = true
+            	# for the moment, don't run CaloTowerClient unless explicitly requested
+            	untracked bool CaloTowerClient = false
+	    	
+	    	untracked bool LEDClient = true
+        	untracked double LEDRMS_ErrThresh = 0.8
+	    	untracked double LEDMEAN_ErrThresh = 2.25
 
-	    untracked bool LEDClient = true
-        untracked double LEDRMS_ErrThresh = 0.8
-	    untracked double LEDMEAN_ErrThresh = 2.25
-
-        untracked bool PedestalClient = true
-	    untracked bool plotPedRAW = false
-	    untracked double PedestalRMS_ErrThresh = 1
-	    untracked double PedestalMean_ErrThresh = 2
-	    untracked double CapIdRMS_ErrThresh = 0.25
-	    untracked double CapIdMEAN_ErrThresh = 1.5
-
-	    untracked bool DoPerChanTests = true
+        	untracked bool PedestalClient = true
+	    	untracked bool plotPedRAW = true
+	    	untracked double PedestalRMS_ErrThresh = 1
+	    	untracked double PedestalMean_ErrThresh = 2
+	    	untracked double CapIdRMS_ErrThresh = 0.25
+	    	untracked double CapIdMEAN_ErrThresh = 1.5
+	    	
+	    	untracked bool DoPerChanTests = true
 
 		#Flags for TPG monitor
 		untracked bool TrigPrimClient = true
 
 		#Which subdetectors are present?
-	    untracked vstring subDetsOn = {'HB', 'HE', 'HF', 'HO'}
+	    	untracked vstring subDetsOn = {'HB', 'HE', 'HF', 'HO'}
       }
