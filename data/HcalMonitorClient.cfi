@@ -39,6 +39,7 @@
 	    	untracked int32 resetFreqTime = -1
 
 		# Analysis jobs to be run
+		untracked bool SummaryClient = true
 	    	untracked bool DataFormatClient = true
 	    	untracked bool DigiClient = true
 	    	untracked bool RecHitClient = true
