@@ -47,6 +47,11 @@
        	    	untracked bool DeadCellClient = true
             	# for the moment, don't run CaloTowerClient unless explicitly requested
             	untracked bool CaloTowerClient = false
+
+                #minimum error rate that shows up on summary plots
+                untracked double digiErrorFrac = 0.05
+                untracked double hotcellErrorFrac = 0.05
+                untracked double deadcellErrorFrac = 0.05
 	    	
 	    	untracked bool LEDClient = true
         	untracked double LEDRMS_ErrThresh = 0.8

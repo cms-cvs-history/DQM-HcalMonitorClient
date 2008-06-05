@@ -43,8 +43,14 @@
 	    untracked bool DigiClient = true
 	    untracked bool RecHitClient = false
 	    untracked bool HotCellClient = false
-            # Number of thresholds to be used by hot cell client
 	    untracked bool DeadCellClient = false
+            untracked bool CaloTowerClient = false
+
+            #minimum error rate that shows up on summary plots 
+            untracked double digiErrorFrac = 0.05 
+            untracked double hotcellErrorFrac = 0.05 
+            untracked double deadcellErrorFrac = 0.05 
+
 
 	    untracked bool LEDClient = false
             untracked double LEDRMS_ErrThresh = 0.8
