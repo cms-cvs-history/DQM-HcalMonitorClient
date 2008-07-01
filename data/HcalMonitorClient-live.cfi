@@ -17,6 +17,9 @@
 		untracked int32 diagnosticPrescaleTime = -1
 		# Operate every N updates
 		untracked int32 diagnosticPrescaleUpdate = -1
+                  
+                # Do you want to print timing info? 
+                untracked bool showTiming = false 
 
 		# Are we running as standalone process?
 		untracked bool runningStandalone = false
