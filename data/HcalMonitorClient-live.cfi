@@ -42,12 +42,14 @@
 	    untracked int32 resetFreqTime = -1
 
 	    # Analysis jobs to be run
-	    untracked bool DataFormatClient = true
+            untracked bool SummaryClient = true
+            untracked bool DataFormatClient = true
 	    untracked bool DigiClient = true
 	    untracked bool RecHitClient = false
 	    untracked bool HotCellClient = false
 	    untracked bool DeadCellClient = false
             untracked bool CaloTowerClient = false
+            
 
             #minimum error rate that shows up on summary plots 
             untracked double digiErrorFrac = 0.05 
