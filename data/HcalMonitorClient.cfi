@@ -59,6 +59,10 @@
         	untracked double LEDRMS_ErrThresh = 0.8
 	    	untracked double LEDMEAN_ErrThresh = 2.25
 
+	    	untracked bool LaserClient = true
+        	untracked double LaserRMS_ErrThresh = 0.8
+	    	untracked double LaserMEAN_ErrThresh = 2.25
+
         	untracked bool PedestalClient = true
 	    	untracked bool plotPedRAW = true
 	    	untracked double PedestalRMS_ErrThresh = 1
