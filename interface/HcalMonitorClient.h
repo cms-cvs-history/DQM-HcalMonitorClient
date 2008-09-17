@@ -7,31 +7,27 @@
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
-#include "FWCore/Utilities/interface/CPUTimer.h" 
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
-#include "DQMServices/Core/interface/DQMStore.h"
+#include "DQMServices/Core/interface/DaqMonitorBEInterface.h"
+#include "DQMServices/Daemon/interface/MonitorDaemon.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
-#include "DQMServices/Core/interface/DQMOldReceiver.h"
+#include "DQMServices/UI/interface/MonitorUIRoot.h"
 
 #include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 #include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
           
 #include <DQM/HcalMonitorClient/interface/HcalClientUtils.h>
-#include <DQM/HcalMonitorClient/interface/HcalSummaryClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalDataFormatClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalDigiClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalRecHitClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalPedestalClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalLEDClient.h>
-#include <DQM/HcalMonitorClient/interface/HcalLaserClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalHotCellClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalDeadCellClient.h>
 #include <DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h>
-#include <DQM/HcalMonitorClient/interface/HcalCaloTowerClient.h>
-
 //#include <DQM/HcalMonitorModule/interface/HcalMonitorSelector.h>
 
 #include <DQM/HcalMonitorClient/interface/HcalDQMDbInterface.h>
@@ -125,13 +121,9 @@ public:
 
   /// Verbosity switch used for debugging or informational output
   bool debug_ ;
-  
-  // Timing diagnostic switch
-  bool showTiming_; // controls whether to show timing diagnostic info 
-  edm::CPUTimer cpu_timer; //  
 
   /// counters and flags
-    //int nevt_; // counts number of events actually analyzed by HcalMonitorClient
+  int nevt_;
   int nlumisecs_;
   bool saved_;
 
@@ -143,19 +135,15 @@ public:
   } psTime_;    
   
   ///Connection to the DQM backend
-  DQMStore* dbe_;  
-  DQMOldReceiver* mui_;
+  DaqMonitorBEInterface* dbe_;  
+  MonitorUserInterface* mui_;
   
   // environment variables
   int irun_,ilumisec_,ievent_,itime_;
-  int maxlumisec_, minlumisec_;
-
-  time_t mytime_;
-
   bool actonLS_ ;
   std::string rootFolder_;
 
-  int ievt_; // counts number of events read by client (and analyzed by tasks)
+  int ievt_;
   int resetUpdate_;
   int resetEvents_;
   int resetTime_;
@@ -169,17 +157,15 @@ public:
   string inputFile_;
   string baseHtmlDir_;
 
-  HcalSummaryClient* summary_client_;
   HcalDataFormatClient* dataformat_client_;
   HcalDigiClient* digi_client_;
   HcalRecHitClient* rechit_client_;
   HcalPedestalClient* pedestal_client_;
   HcalLEDClient* led_client_;
-  HcalLaserClient* laser_client_;
   HcalHotCellClient* hot_client_;
   HcalDeadCellClient* dead_client_;
   HcalTrigPrimClient* tp_client_;
-  HcalCaloTowerClient* ct_client_;
+
   HcalHotCellDbInterface* dqm_db_;
 
 

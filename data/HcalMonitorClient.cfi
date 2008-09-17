@@ -27,9 +27,7 @@
 		# Directory for HTML output
          	# Disabled if set to ""
 		untracked string baseHtmlDir = '.'
-                 
-                # Do you want to print timing info?
-                untracked bool showTiming = false
+
 
 		# Do you want this program to exit at the end of a run?
         	untracked bool enableExit = false
@@ -58,10 +56,6 @@
 	    	untracked bool LEDClient = true
         	untracked double LEDRMS_ErrThresh = 0.8
 	    	untracked double LEDMEAN_ErrThresh = 2.25
-
-	    	untracked bool LaserClient = true
-        	untracked double LaserRMS_ErrThresh = 0.8
-	    	untracked double LaserMEAN_ErrThresh = 2.25
 
         	untracked bool PedestalClient = true
 	    	untracked bool plotPedRAW = true
