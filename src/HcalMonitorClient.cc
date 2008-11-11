@@ -31,10 +31,6 @@ HcalMonitorClient::~HcalMonitorClient(){
 //--------------------------------------------------------
 void HcalMonitorClient::initialize(const ParameterSet& ps){
 
-  cout << endl;
-  cout << " *** Hcal Monitor Client ***" << endl;
-  cout << endl;
-
   irun_=0; ilumisec_=0; ievent_=0; itime_=0;
 
   maxlumisec_=0; minlumisec_=0;
@@ -57,15 +53,16 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
 
   // MonitorDaemon switch
   enableMonitorDaemon_ = ps.getUntrackedParameter<bool>("enableMonitorDaemon", true);
-  if ( enableMonitorDaemon_ ) cout << "-->enableMonitorDaemon switch is ON" << endl;
-  else cout << "-->enableMonitorDaemon switch is OFF" << endl;
+  if (debug_) {
+    if ( enableMonitorDaemon_ ) cout << "-->enableMonitorDaemon switch is ON" << endl;
+    else cout << "-->enableMonitorDaemon switch is OFF" << endl;}
 
   mui_ = new DQMOldReceiver();
   dbe_ = mui_->getBEInterface();
 
   // DQM ROOT input
   inputFile_ = ps.getUntrackedParameter<string>("inputFile", "");
-  if(inputFile_.size()!=0 ) cout << "-->reading DQM input from " << inputFile_ << endl;
+  if(debug_ && (inputFile_.size()!=0) ) cout << "-->reading DQM input from " << inputFile_ << endl;
   
   if( ! enableMonitorDaemon_ ) {  
     if( inputFile_.size() != 0 && dbe_!=NULL){
@@ -76,29 +73,29 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
 
   //histogram reset freqency, update frequency, timeout
   resetUpdate_ = ps.getUntrackedParameter<int>("resetFreqUpdates",-1);  //number of collector updates
-  if(resetUpdate_!=-1) cout << "-->Will reset histograms every " << resetUpdate_ <<" collector updates." << endl;
+  if(debug_ && resetUpdate_!=-1) cout << "-->Will reset histograms every " << resetUpdate_ <<" collector updates." << endl;
   resetEvents_ = ps.getUntrackedParameter<int>("resetFreqEvents",-1);   //number of real events
-  if(resetEvents_!=-1) cout << "-->Will reset histograms every " << resetEvents_ <<" events." << endl;
+  if(debug_ && resetEvents_!=-1) cout << "-->Will reset histograms every " << resetEvents_ <<" events." << endl;
   resetTime_ = ps.getUntrackedParameter<int>("resetFreqTime",-1);       //number of minutes
-  if(resetTime_!=-1) cout << "-->Will reset histograms every " << resetTime_ <<" minutes." << endl;
+  if(debug_ && resetTime_!=-1) cout << "-->Will reset histograms every " << resetTime_ <<" minutes." << endl;
   resetLS_ = ps.getUntrackedParameter<int>("resetFreqLS",-1);       //number of lumisections
-  if(resetLS_!=-1) cout << "-->Will reset histograms every " << resetLS_ <<" lumi sections." << endl;
+  if(debug_ && resetLS_!=-1) cout << "-->Will reset histograms every " << resetLS_ <<" lumi sections." << endl;
 
   // base Html output directory
   baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
-  if( baseHtmlDir_.size() != 0 ) 
+  if(debug_ &&  baseHtmlDir_.size() != 0 ) 
     cout << "-->HTML output will go to baseHtmlDir = '" << baseHtmlDir_ << "'" << endl;
-  else cout << "-->HTML output is disabled" << endl;
+  else if (debug_) cout << "-->HTML output is disabled" << endl;
   
   // exit on end job switch
   enableExit_ = ps.getUntrackedParameter<bool>("enableExit", true);
-  if( enableExit_ ) cout << "-->enableExit switch is ON" << endl;
-  else cout << "-->enableExit switch is OFF" << endl;
+  if(debug_ &&  enableExit_ ) cout << "-->enableExit switch is ON" << endl;
+  else if (debug_)cout << "-->enableExit switch is OFF" << endl;
 
   
   runningStandalone_ = ps.getUntrackedParameter<bool>("runningStandalone", false);
-  if( runningStandalone_ ) cout << "-->standAlone switch is ON" << endl;
-  else cout << "-->standAlone switch is OFF" << endl;
+  if(debug_ &&  runningStandalone_ ) cout << "-->standAlone switch is ON" << endl;
+  else if (debug_ )cout << "-->standAlone switch is OFF" << endl;
 
   // global ROOT style
   gStyle->Reset("Default");
@@ -172,22 +169,22 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
 
   // set parameters   
   prescaleEvt_ = ps.getUntrackedParameter<int>("diagnosticPrescaleEvt", -1);
-  cout << "===>DQM event prescale = " << prescaleEvt_ << " event(s)"<< endl;
+  if (debug_) cout << "===>DQM event prescale = " << prescaleEvt_ << " event(s)"<< endl;
 
   prescaleLS_ = ps.getUntrackedParameter<int>("diagnosticPrescaleLS", -1);
-  cout << "===>DQM lumi section prescale = " << prescaleLS_ << " lumi section(s)"<< endl;
+  if (debug_) cout << "===>DQM lumi section prescale = " << prescaleLS_ << " lumi section(s)"<< endl;
   if (prescaleLS_>0) actonLS_=true;
 
   prescaleUpdate_ = ps.getUntrackedParameter<int>("diagnosticPrescaleUpdate", -1);
-  cout << "===>DQM update prescale = " << prescaleUpdate_ << " update(s)"<< endl;
+  if (debug_) cout << "===>DQM update prescale = " << prescaleUpdate_ << " update(s)"<< endl;
 
   prescaleTime_ = ps.getUntrackedParameter<int>("diagnosticPrescaleTime", -1);
-  cout << "===>DQM time prescale = " << prescaleTime_ << " minute(s)"<< endl;
+  if (debug_) cout << "===>DQM time prescale = " << prescaleTime_ << " minute(s)"<< endl;
   
 
   // Base folder for the contents of this job
   string subsystemname = ps.getUntrackedParameter<string>("subSystemFolder", "Hcal") ;
-  cout << "===>HcalMonitor name = " << subsystemname << endl;
+  if (debug_) cout << "===>HcalMonitor name = " << subsystemname << endl;
   rootFolder_ = subsystemname + "/";
 
   
@@ -258,9 +255,6 @@ void HcalMonitorClient::beginJob(const EventSetup& c){
 //--------------------------------------------------------
 void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c) {
 
-  cout << endl;
-  cout << "HcalMonitorClient: Standard beginRun() for run " << r.id().run() << endl;
-  cout << endl;
   if( summary_client_ )    summary_client_->beginRun();
   if( dataformat_client_ ) dataformat_client_->beginRun();
   if( digi_client_ )       digi_client_->beginRun();
@@ -356,13 +350,10 @@ void HcalMonitorClient::endJob(void) {
 //--------------------------------------------------------
 void HcalMonitorClient::endRun(const Run& r, const EventSetup& c) {
 
-  cout << endl;
-  cout << "Standard endRun() for run " << r.id().run() << endl;
-  cout << endl;
 
   if( debug_ ) printf("HcalMonitorClient: processed events: %d\n",ievt_);
 
-  printf("==>Creating report after run end condition\n");
+  if( debug_ ) printf("==>Creating report after run end condition\n");
   if(irun_>1){
     if(inputFile_.size()!=0) report(true);
     else report(false);
@@ -382,13 +373,13 @@ void HcalMonitorClient::endRun(const Run& r, const EventSetup& c) {
 
   // this is an effective way to avoid ROOT memory leaks ...
   if( enableExit_ ) {
-    cout << endl;
-    cout << ">>> exit after End-Of-Run <<<" << endl;
-    cout << endl;
+    if( debug_) {
+      cout << endl;
+      cout << ">>> exit after End-Of-Run <<<" << endl;
+      cout << endl;}
     
     endJob();
-    throw cms::Exception("End of Job")
-      << "HcalMonitorClient: Done processing...\n";
+    throw cms::Exception("End of Job");
   }
 }
 
@@ -628,7 +619,7 @@ void HcalMonitorClient::errorSummary(){
   float errorSummary = 1.0;
   if(nTests>0) errorSummary = 1.0 - (float(errE.size())+float(errW.size()))/float(nTests);
   
-  cout << "Hcal DQM Error Summary ("<< errorSummary <<"): "<< nTests << " tests, "<<errE.size() << " errors, " <<errW.size() << " warnings, "<< errO.size() << " others" << endl;
+  if (debug_ || showTiming_) cout << "Hcal DQM Error Summary ("<< errorSummary <<"): "<< nTests << " tests, "<<errE.size() << " errors, " <<errW.size() << " warnings, "<< errO.size() << " others" << endl;
   
   char meTitle[256];
   sprintf(meTitle,"%sEventInfo/errorSummary",rootFolder_.c_str() );
