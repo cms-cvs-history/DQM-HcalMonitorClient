@@ -109,8 +109,8 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
 
   // clients' constructors
   if( ps.getUntrackedParameter<bool>("SummaryClient", true) ){
-    if(debug_) {;}
-    cout << "===>DQM Summary Client is ON" << endl;
+    if(debug_) 
+      cout << "===>DQM Summary Client is ON" << endl;
     summary_client_   = new HcalSummaryClient(ps);
     ///> No init() exists, and we may not need one....
     //summary_client_->init(ps, dbe_,"DataFormatClient");
