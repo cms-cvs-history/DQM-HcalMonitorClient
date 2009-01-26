@@ -13,7 +13,7 @@
 //
 // Original Author:  "Igor Vodopiyanov"
 //         Created:  Nov-21 2008
-// $Id: HcalDataCertification.cc,v 1.11 2008/11/21 01:11:01 ivodop Exp $
+// $Id: HcalDataCertification.cc,v 1.1 2008/12/18 21:45:45 ivodop Exp $
 //
 //
 
@@ -162,10 +162,19 @@ HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
   Int_t nenHB,nenHE,nenHF,nenHO;
   nenHB=nenHE=nenHF=nenHO=0;
 
-  TH1F *hTP;
-  TH2F *hhotHB,*hhotHF,*hhotHE,*hhotHO;
-  TH2F *hdeadHB,*hdeadHF,*hdeadHE,*hdeadHO;
-  TH2F *henergeticHB,*henergeticHE,*henergeticHF,*henergeticHO;
+  TH1F *hTP=0;
+  TH2F *hhotHB=0;
+  TH2F *hhotHF=0;
+  TH2F *hhotHE=0;
+  TH2F *hhotHO=0;
+  TH2F *hdeadHB=0;
+  TH2F *hdeadHF=0;
+  TH2F *hdeadHE=0;
+  TH2F *hdeadHO=0;
+  TH2F *henergeticHB=0;
+  TH2F *henergeticHF=0;
+  TH2F *henergeticHE=0;
+  TH2F *henergeticHO=0;
 
 
   // ************** Loop over Monitoring Elements and fill working histograms
