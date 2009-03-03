@@ -13,7 +13,7 @@
 //
 // Original Author:  "Igor Vodopiyanov"
 //         Created:  Nov-21 2008
-// $Id: HcalDataCertification.cc,v 1.2 2009/02/27 23:22:12 ivodop Exp $
+// $Id: HcalDataCertification.cc,v 1.1.2.2 2009/03/02 16:41:56 temple Exp $
 //
 //
 
@@ -42,7 +42,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 
 //
-// class decleration
+// class declaration
 //
 
 class HcalDataCertification : public edm::EDAnalyzer {
@@ -62,7 +62,7 @@ class HcalDataCertification : public edm::EDAnalyzer {
    edm::ParameterSet conf_;
    DQMStore * dbe;
    edm::Service<TFileService> fs_;
-
+   int debug_;
 };
 
 //
@@ -80,6 +80,7 @@ class HcalDataCertification : public edm::EDAnalyzer {
 HcalDataCertification::HcalDataCertification(const edm::ParameterSet& iConfig):conf_(iConfig)
 {
   // now do what ever initialization is needed
+  debug_ = iConfig.getUntrackedParameter<int>("debug",0);
 }
 
 
@@ -99,17 +100,6 @@ void
 HcalDataCertification::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
   using namespace edm;
-   
-#ifdef THIS_IS_AN_EVENT_EXAMPLE
-  Handle<ExampleData> pIn;
-  iEvent.getByLabel("example",pIn);
-#endif
-   
-#ifdef THIS_IS_AN_EVENTSETUP_EXAMPLE
-  ESHandle<SetupData> pSetup;
-  iSetup.get<SetupRecord>().get(pSetup);
-#endif
-
 }
 
 // ------------ method called once each job just before starting event loop  ------------
@@ -118,21 +108,21 @@ HcalDataCertification::beginJob(const edm::EventSetup&)
 {
   dbe = 0;
   dbe = edm::Service<DQMStore>().operator->();
-  //std::cout<<"beginJob"<< std::endl;
+  if (debug_>0) std::cout<<"<HcalDataCertification> beginJob"<< std::endl;
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
 void 
 HcalDataCertification::endJob() 
 {
-  //std::cout << ">>> endJob " << std::endl;
+  if (debug_>0) std::cout << "<HcalDataCertification> endJob " << std::endl;
 }
 
 // ------------ method called just before starting a new run  ------------
 void 
 HcalDataCertification::beginRun(const edm::Run& run, const edm::EventSetup& c)
 {
-  //std::cout<<"beginRun"<<std::endl;
+  if (debug_>0) std::cout<<"<HcalDataCertification> beginRun"<<std::endl;
 }
 
 // ------------ method called right after a run ends ------------
@@ -144,9 +134,9 @@ HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
   
   dbe->setCurrentFolder("Hcal");
   std::string currDir = dbe->pwd();
-  //std::cout << "--- Current Directory " << currDir << std::endl;
+  if (debug_>1) std::cout << "<HcalDataCertification::endRun> --- Current Directory " << currDir << std::endl;
   std::vector<MonitorElement*> mes = dbe->getAllContents("");
-  //std::cout << "found " << mes.size() << " monitoring elements:" << std::endl;
+  if (debug_>1) std::cout << "<HcalDataCertification::endRun> found " << mes.size() << " monitoring elements:" << std::endl;
 
   dbe->setCurrentFolder("Hcal/EventInfo/CertificationContents/");
   MonitorElement* Hcal_HB = dbe->bookFloat("Hcal_HB");
@@ -160,7 +150,7 @@ HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
   Hcal_HO->Fill(-1);
 
   int nevt = (dbe->get("Hcal/EventInfo/processedEvents"))->getIntValue();
-  if (nevt<1) {
+  if (debug_>0 && nevt<1) {
     edm::LogInfo("HcalDataCertification")<<"Nevents processed ="<<nevt<<" => exit"<<std::endl;
     return;
   }
