@@ -221,7 +221,8 @@ void HcalSummaryClient::setup(void)
   for (int ieta=1;ieta<=etaBins_;++ieta)
     for (int iphi=1; iphi<=phiBins_;++iphi)
       me->setBinContent(ieta,iphi,-1);
-  
+  me->setAxisRange(-1,1,3);
+
   // Make new simplified status histogram
   histo.str("");
   histo<<"reportSummaryMap";
@@ -230,6 +231,8 @@ void HcalSummaryClient::setup(void)
     dqmStore_->removeElement(me->getName());
   me = dqmStore_->book2D(histo.str().c_str(), histo.str().c_str(), 
 			 5,0,5,1,0,1);
+  me->setAxisRange(-1,1,3);
+
   TH2F* myhist=me->getTH2F();
   myhist->GetXaxis()->SetBinLabel(1,"HB");
   myhist->GetXaxis()->SetBinLabel(2,"HE");
@@ -289,13 +292,14 @@ void HcalSummaryClient::analyze(void)
     }
   for (int ix=1;ix<=5;++ix)
     simpleMap->setBinContent(ix,1,-1);
+  simpleMap->setAxisRange(-1,1,3);
 
   MonitorElement* reportMap = dqmStore_->get(prefixME_ + "/EventInfo/advancedReportSummaryMap");
   // Set all bins to "unknown" to start
   for (int ieta=1;ieta<=etaBins_;++ieta)
     for (int iphi=1; iphi<=phiBins_;++iphi)
       reportMap->setBinContent(ieta,iphi,-1);
-
+  reportMap->setAxisRange(-1,1,3);
 
   // Set values to 'unknown' status; they'll be set by analyze_everything routines 
 
