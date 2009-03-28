@@ -13,7 +13,7 @@
 //
 // Original Author:  "Igor Vodopiyanov"
 //         Created:  Nov-21 2008
-// $Id: HcalDataCertification.cc,v 1.1.2.2 2009/03/02 16:41:56 temple Exp $
+// $Id: HcalDataCertification.cc,v 1.3 2009/03/24 13:41:12 temple Exp $
 //
 //
 
@@ -31,6 +31,7 @@
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
+#include "FWCore/Framework/interface/LuminosityBlock.h"
 
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 
@@ -54,8 +55,8 @@ class HcalDataCertification : public edm::EDAnalyzer {
       virtual void beginJob(const edm::EventSetup&) ;
       virtual void analyze(const edm::Event&, const edm::EventSetup&);
       virtual void endJob() ;
-      virtual void beginRun(const edm::Run&, const edm::EventSetup&) ;
-      virtual void endRun(const edm::Run&, const edm::EventSetup&) ;
+      virtual void beginLuminosityBlock(const edm::LuminosityBlock&, const edm::EventSetup&) ;
+      virtual void endLuminosityBlock(const edm::LuminosityBlock&, const edm::EventSetup&) ;
 
    // ----------member data ---------------------------
 
@@ -120,23 +121,23 @@ HcalDataCertification::endJob()
 
 // ------------ method called just before starting a new run  ------------
 void 
-HcalDataCertification::beginRun(const edm::Run& run, const edm::EventSetup& c)
+HcalDataCertification::beginLuminosityBlock(const edm::LuminosityBlock& run, const edm::EventSetup& c)
 {
-  if (debug_>0) std::cout<<"<HcalDataCertification> beginRun"<<std::endl;
+  if (debug_>0) std::cout<<"<HcalDataCertification> beginLuminosityBlock"<<std::endl;
 }
 
 // ------------ method called right after a run ends ------------
 void 
-HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
+HcalDataCertification::endLuminosityBlock(const edm::LuminosityBlock& run, const edm::EventSetup& c)
 {
 
   float dcsFrac,daqFrac,fracHB,fracHE,fracHF,fracHO;
   
   dbe->setCurrentFolder("Hcal");
   std::string currDir = dbe->pwd();
-  if (debug_>1) std::cout << "<HcalDataCertification::endRun> --- Current Directory " << currDir << std::endl;
+  if (debug_>0) std::cout << "<HcalDataCertification::endLuminosityBlock> --- Current Directory " << currDir << std::endl;
   std::vector<MonitorElement*> mes = dbe->getAllContents("");
-  if (debug_>1) std::cout << "<HcalDataCertification::endRun> found " << mes.size() << " monitoring elements:" << std::endl;
+  if (debug_>0) std::cout << "<HcalDataCertification::endLuminosityBlock> found " << mes.size() << " monitoring elements:" << std::endl;
 
   dbe->setCurrentFolder("Hcal/EventInfo/CertificationContents/");
   MonitorElement* Hcal_HB = dbe->bookFloat("Hcal_HB");
@@ -150,6 +151,7 @@ HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
   Hcal_HO->Fill(-1);
 
   int nevt = (dbe->get("Hcal/EventInfo/processedEvents"))->getIntValue();
+  if (debug_>0) std::cout << "<HcalDataCertification::nevt= " << nevt << std::endl;
   if (debug_>0 && nevt<1) {
     edm::LogInfo("HcalDataCertification")<<"Nevents processed ="<<nevt<<" => exit"<<std::endl;
     return;
@@ -204,6 +206,7 @@ HcalDataCertification::endRun(const edm::Run& run, const edm::EventSetup& c)
   Hcal_HO->Fill(fracHO);
 
 // ---------------------- end of certification
+  if (debug_>0) std::cout << "<HcalDataCertification::MEfilled= " << std::endl;
 
 }
 

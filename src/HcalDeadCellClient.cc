@@ -5,6 +5,8 @@
 #include <math.h>
 #include <iostream>
 
+#define BITSHIFT 5
+
 HcalDeadCellClient::HcalDeadCellClient(){} // constructor 
 
 void HcalDeadCellClient::init(const ParameterSet& ps, DQMStore* dbe,string clientName){
@@ -16,19 +18,16 @@ void HcalDeadCellClient::init(const ParameterSet& ps, DQMStore* dbe,string clien
   deadclient_test_occupancy_         = ps.getUntrackedParameter<bool>("DeadCellClient_test_occupancy",true);
   deadclient_test_rechit_occupancy_  = ps.getUntrackedParameter<bool>("DeadCellClient_test_occupancy",true);
   deadclient_test_pedestal_          = ps.getUntrackedParameter<bool>("DeadCellClient_test_pedestal",true);
-  deadclient_test_neighbor_          = ps.getUntrackedParameter<bool>("DeadCellClient_test_neighbor",true);
+  deadclient_test_neighbor_          = ps.getUntrackedParameter<bool>("DeadCellClient_test_neighbor",false);
   deadclient_test_energy_            = ps.getUntrackedParameter<bool>("DeadCellClient_test_energy",true);
 
   deadclient_checkNevents_ = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents",100);
-  deadclient_checkNevents_occupancy_ = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents_occupancy",deadclient_checkNevents_);
-  deadclient_checkNevents_rechit_occupancy_ = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents_rechit_occupancy",deadclient_checkNevents_);
-  deadclient_checkNevents_pedestal_  = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents_pedestal" ,deadclient_checkNevents_);
-  deadclient_checkNevents_neighbor_  = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents_neighbor" ,deadclient_checkNevents_);
-  deadclient_checkNevents_energy_    = ps.getUntrackedParameter<int>("DeadCellClient_checkNevents_energy"   ,deadclient_checkNevents_);
 
   minErrorFlag_ = ps.getUntrackedParameter<double>("DeadCellClient_minErrorFlag",0.0);
 
   deadclient_makeDiagnostics_ = ps.getUntrackedParameter<bool>("DeadCellClient_makeDiagnosticPlots",false);
+
+  dump2database_ = false; // eventually make this configurable
 
   // Set histograms to NULL
   ProblemDeadCells=0;
@@ -36,10 +35,11 @@ void HcalDeadCellClient::init(const ParameterSet& ps, DQMStore* dbe,string clien
     {
       // Set each array's pointers to NULL
       ProblemDeadCellsByDepth[i]=0;
-      UnoccupiedDeadCellsByDepth[i]=0;
-      BelowPedestalDeadCellsByDepth[i]=0;
-      BelowNeighborsDeadCellsByDepth[i]=0;
-      BelowEnergyThresholdCellsByDepth[i]=0;
+      if (deadclient_test_occupancy_) UnoccupiedDeadCellsByDepth[i]=0;
+      if (deadclient_test_rechit_occupancy_) UnoccupiedRecHitsByDepth[i]=0;
+      if (deadclient_test_pedestal_) BelowPedestalDeadCellsByDepth[i]=0;
+      if (deadclient_test_neighbor_) BelowNeighborsDeadCellsByDepth[i]=0;
+      if (deadclient_test_energy_) BelowEnergyThresholdCellsByDepth[i]=0;
     }  
 
   if (deadclient_makeDiagnostics_)
@@ -77,7 +77,7 @@ HcalDeadCellClient::~HcalDeadCellClient()
 
 void HcalDeadCellClient::beginJob(const EventSetup& eventSetup){
 
-  if ( debug_>1 ) cout << "HcalDeadCellClient: beginJob" << endl;
+  if ( debug_>1 ) std::cout << "HcalDeadCellClient: beginJob" << std::endl;
 
   ievt_ = 0;
   jevt_ = 0;
@@ -88,7 +88,7 @@ void HcalDeadCellClient::beginJob(const EventSetup& eventSetup){
 
 void HcalDeadCellClient::beginRun(void)
 {
-  if ( debug_>1 ) cout << "HcalDeadCellClient: beginRun" << endl;
+  if ( debug_>1 ) std::cout << "HcalDeadCellClient: beginRun" << std::endl;
 
   jevt_ = 0;
   this->setup();
@@ -97,9 +97,108 @@ void HcalDeadCellClient::beginRun(void)
 } // void HcalDeadCellClient::beginRun(void)
 
 
-void HcalDeadCellClient::endJob(void) 
+void HcalDeadCellClient::endJob(std::map<HcalDetId, unsigned int>& myqual) 
 {
-  if ( debug_>1 ) cout << "HcalDeadCellClient: endJob, ievt = " << ievt_ << endl;
+  if ( debug_>1 ) std::cout << "HcalDeadCellClient: endJob, ievt = " << ievt_ << std::endl;
+
+  if (dump2database_==true) // don't do anything special unless specifically asked to dump db file
+    {
+      int eta,phi;
+      float binval;
+      int mydepth;
+
+      int subdet;
+      char* subdetname;
+      if (debug_>1)
+	{
+	  std::cout <<"<HcalDeadCellClient>  Summary of Dead Cells in Run: "<<std::endl;
+	  std::cout <<"(Error rate must be >= "<<minErrorFlag_*100.<<"% )"<<std::endl;  
+	}
+
+      float etaMin = ProblemDeadCells->GetXaxis()->GetXmin();
+      float phiMin = ProblemDeadCells->GetYaxis()->GetXmin();
+      int etabins  = ProblemDeadCells->GetNbinsX();
+      int phibins  = ProblemDeadCells->GetNbinsY();
+      for (int ieta=1;ieta<=etabins;++ieta)
+	{
+	  for (int iphi=1;iphi<=phibins;++iphi)
+	    {
+	      eta=ieta+int(etaMin)-1;
+	      phi=iphi+int(phiMin)-1;
+	      
+	      for (int d=0;d<6;++d)
+		{
+		  // ProblemDeadCells have already been normalized
+		  binval=ProblemDeadCellsByDepth[d]->GetBinContent(ieta,iphi);
+		  
+		  // Set subdetector labels for output
+		  if (d<2) // HB/HF
+		    {
+		      if (abs(eta)<29)
+			{
+			  subdetname="HB";
+			  subdet=1;
+			}
+		      else
+			{
+			  subdetname="HF";
+			  subdet=4;
+			}
+		    }
+		  else if (d==3)
+		    {
+		      if (abs(eta)==43)
+			{
+			  subdetname="ZDC";
+			  subdet=7; // correct value??
+			}
+		      else
+			{
+			  subdetname="HO";
+			  subdet=3;
+			}
+		    }
+		  else
+		    {
+		      subdetname="HE";
+		      subdet=2;
+		    }
+		  // Set correct depth label
+		  if (d>3)
+		    mydepth=d-3;
+		  else
+		    mydepth=d+1;
+		  HcalDetId myid((HcalSubdetector)(subdet), eta, phi, mydepth);
+		  // Need this to keep from flagging non-existent HE/HF cells
+		  if (!validDetId((HcalSubdetector)(subdet), eta, phi, mydepth))
+		    continue;
+		  if (binval<=minErrorFlag_)
+		    continue;
+		  if (debug_>0)
+		    std::cout <<"Hot Cell "<<subdet<<"("<<eta<<", "<<phi<<", "<<mydepth<<"):  "<<binval*100.<<"%"<<std::endl;
+
+		  // if we've reached here, hot cell condition was met
+		  int value=1;
+
+		  if (myqual.find(myid)==myqual.end())
+		    {
+		      myqual[myid]=(value<<BITSHIFT);  // hotcell shifted to bit 6
+		    }
+		  else
+		    {
+		      int mask=(1<<BITSHIFT);
+		      if (value==1)
+			myqual[myid] |=mask;
+		  
+		      else
+			myqual[myid] &=~mask;
+		    }
+		} // for (int d=0;d<6;++d) // loop over depth histograms
+	    } // for (int iphi=1;iphi<=phibins;++iphi)
+	} // for (int ieta=1;ieta<=etabins;++ieta)
+    } // if (dump2database_==true)
+
+
 
   this->cleanup();
   return;
@@ -108,7 +207,7 @@ void HcalDeadCellClient::endJob(void)
 
 void HcalDeadCellClient::endRun(void) 
 {
-  if ( debug_>1 ) cout << "HcalDeadCellClient: endRun, jevt = " << jevt_ << endl;
+  if ( debug_>1 ) std::cout << "HcalDeadCellClient: endRun, jevt = " << jevt_ << std::endl;
 
   this->cleanup();
   return;
@@ -127,12 +226,13 @@ void HcalDeadCellClient::cleanup(void)
     {
       // delete individual histogram pointers
       if (ProblemDeadCells) delete ProblemDeadCells;
-      
+
       for (int i=0;i<6;++i)
 	{
 	  // delete pointers within arrays of histograms
 	  if (ProblemDeadCellsByDepth[i])           delete ProblemDeadCellsByDepth[i];
 	  if (UnoccupiedDeadCellsByDepth[i])        delete UnoccupiedDeadCellsByDepth[i];
+	  if (UnoccupiedRecHitsByDepth[i])          delete UnoccupiedRecHitsByDepth[i];
 	  if (BelowPedestalDeadCellsByDepth[i])     delete BelowPedestalDeadCellsByDepth[i];
 	  if (BelowNeighborsDeadCellsByDepth[i])    delete BelowNeighborsDeadCellsByDepth[i];
 	  if (BelowEnergyThresholdCellsByDepth[i])  delete BelowEnergyThresholdCellsByDepth[i];
@@ -165,6 +265,7 @@ void HcalDeadCellClient::cleanup(void)
       // Set each array's pointers to NULL
       ProblemDeadCellsByDepth[i]=0;
       UnoccupiedDeadCellsByDepth[i]=0;
+      UnoccupiedRecHitsByDepth[i]=0;
       BelowPedestalDeadCellsByDepth[i]=0;
       BelowNeighborsDeadCellsByDepth[i]=0;
       BelowEnergyThresholdCellsByDepth[i]=0;
@@ -198,18 +299,9 @@ void HcalDeadCellClient::cleanup(void)
 void HcalDeadCellClient::report()
 {
   if(!dbe_) return;
-  if ( debug_>1 ) cout << "HcalDeadCellClient: report" << endl;
+  if ( debug_>1 ) std::cout << "HcalDeadCellClient: report" << std::endl;
   this->setup();
 
-  ostringstream name;
-  name<<process_.c_str()<<"Hcal/DeadCellMonitor_Hcal/Dead Cell Task Event Number";
-  MonitorElement* me = dbe_->get(name.str().c_str());
-  if ( me ) {
-    string s = me->valueString();
-    ievt_ = -1;
-    sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
-    if ( debug_>1 ) cout << "Found '" << name.str().c_str() << "'" << endl;
-  }
   getHistograms();
 
   return;
@@ -220,7 +312,20 @@ void HcalDeadCellClient::getHistograms()
 {
   if(!dbe_) return;
 
+
+
   ostringstream name;
+  name<<process_.c_str()<<"Hcal/DeadCellMonitor_Hcal/Dead Cell Task Event Number";
+  // Get ievt_ value
+  MonitorElement* me = dbe_->get(name.str().c_str());
+  if ( me ) {
+    string s = me->valueString();
+    ievt_ = -1;
+    sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
+    if ( debug_>1 ) cout << "Found '" << name.str().c_str() << "'" << endl;
+  }
+
+
   // dummy histograms
   TH2F* dummy2D = new TH2F();
   TH1F* dummy1D = new TH1F();
@@ -229,12 +334,12 @@ void HcalDeadCellClient::getHistograms()
 
 
   // Grab individual histograms
+  name.str("");
   name<<process_.c_str()<<"DeadCellMonitor_Hcal/ ProblemDeadCells";
   ProblemDeadCells = getAnyHisto(dummy2D, name.str(), process_, dbe_, debug_, cloneME_);
   name.str("");
 
   getSJ6histos("DeadCellMonitor_Hcal/problem_deadcells/", " Problem Dead Cell Rate", ProblemDeadCellsByDepth);
-
   if (deadclient_test_occupancy_) getSJ6histos("DeadCellMonitor_Hcal/dead_unoccupied_digi/",   "Dead Cells with No Digis", UnoccupiedDeadCellsByDepth);
   if (deadclient_test_rechit_occupancy_) getSJ6histos("DeadCellMonitor_Hcal/dead_unoccupied_rechit/",   "Dead Cells with No Rec Hits", UnoccupiedRecHitsByDepth);
  
@@ -258,17 +363,27 @@ void HcalDeadCellClient::getHistograms()
       d_HFenergyVsNeighbor=getAnyHisto(dummy2D,(process_+"DeadCellMonitor_Hcal/diagnostics/neighborcells/HF_energyVsNeighbor").c_str(), process_, dbe_, debug_, cloneME_);
     } // if (deadclient_makeDiagnostics_)
 
-
-  // Force min/max on problemcells
-  for (int i=0;i<6;++i)
+  // Scale rate histograms
+  if (ievt_>0)
     {
-      if (ProblemDeadCellsByDepth[i])
+      if (ProblemDeadCells && ievt_>0)
 	{
-	  ProblemDeadCellsByDepth[i]->SetMaximum(1);
-	  ProblemDeadCellsByDepth[i]->SetMinimum(0);
+	  cout <<"ievt = "<<ievt_<<endl;
+	  ProblemDeadCells->Scale(1./ievt_);
+	  ProblemDeadCells->SetMaximum(1);
+	  ProblemDeadCells->SetMinimum(0);
 	}
-      name.str("");
 
+      // Force min/max on problemcells
+      for (int i=0;i<6;++i)
+	{
+	  if (ievt_>0 && ProblemDeadCellsByDepth[i])
+	    {
+	      ProblemDeadCellsByDepth[i]->Scale(1./ievt_);
+	      ProblemDeadCellsByDepth[i]->SetMaximum(1);
+	      ProblemDeadCellsByDepth[i]->SetMinimum(0);
+	    }
+	}
     } // for (int i=0;i<6;++i)
 
   return;
@@ -280,9 +395,9 @@ void HcalDeadCellClient::analyze(void)
   jevt_++;
   if ( jevt_ % 10 == 0 ) 
     {
-      if ( debug_>1 ) cout << "<HcalDeadCellClient::analyze>  Running analyze "<<endl;
+      if ( debug_>1 ) std::cout << "<HcalDeadCellClient::analyze>  Running analyze "<<std::endl;
     }
-  //getHistograms(); // not needed here?
+  getHistograms(); // not needed here?
   return;
 } // void HcalDeadCellClient::analyze(void)
 
@@ -373,7 +488,7 @@ void HcalDeadCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
       cpu_timer.reset(); cpu_timer.start();
     }
   getHistograms(); 
-  if (debug_>1) cout << "Preparing HcalDeadCellClient html output ..." << endl;
+  if (debug_>1) std::cout << "Preparing HcalDeadCellClient html output ..." << std::endl;
 
   string client = "DeadCellMonitor";
 
@@ -381,64 +496,64 @@ void HcalDeadCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   htmlFile.open((htmlDir + htmlName).c_str());
 
   // html page header
-  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << endl;
-  htmlFile << "<html>  " << endl;
-  htmlFile << "<head>  " << endl;
-  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << endl;
-  htmlFile << " http-equiv=\"content-type\">  " << endl;
-  htmlFile << "  <title>Monitor: Hcal Dead Cell Task output</title> " << endl;
-  htmlFile << "</head>  " << endl;
-  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << endl;
-  htmlFile << "<body>  " << endl;
-  htmlFile << "<br>  " << endl;
-  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << endl;
-  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Dead Cells</span></h2> " << endl;
+  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << std::endl;
+  htmlFile << "<html>  " << std::endl;
+  htmlFile << "<head>  " << std::endl;
+  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << std::endl;
+  htmlFile << " http-equiv=\"content-type\">  " << std::endl;
+  htmlFile << "  <title>Monitor: Hcal Dead Cell Task output</title> " << std::endl;
+  htmlFile << "</head>  " << std::endl;
+  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << std::endl;
+  htmlFile << "<body>  " << std::endl;
+  htmlFile << "<br>  " << std::endl;
+  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << std::endl;
+  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Dead Cells</span></h2> " << std::endl;
 
-  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << endl;
-  htmlFile << "<hr>" << endl;
+  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << std::endl;
+  htmlFile << "<hr>" << std::endl;
 
-  htmlFile << "<h2><strong>Hcal Dead Cell Status</strong></h2>" << endl;
-  htmlFile << "<h3>" << endl;
-  htmlFile << "</h3>" << endl;
+  htmlFile << "<h2><strong>Hcal Dead Cell Status</strong></h2>" << std::endl;
+  htmlFile << "<h3>" << std::endl;
+  htmlFile << "</h3>" << std::endl;
 
-  htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
+  htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
   gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
   htmlAnyHisto(runNo,ProblemDeadCells,"i#eta","i#phi", 92, htmlFile, htmlDir);
-  htmlFile<<"</tr>"<<endl;
-  htmlFile<<"<tr align=\"center\"><td> A cell is considered dead if it meets any of the following criteria:"<<endl;
-  if (deadclient_test_occupancy_) htmlFile<<"<br> A cell's digi is not present for a number of consecutive events; "<<endl;
-  if (deadclient_test_rechit_occupancy_) htmlFile<<"<br> A cell's rec hit is not present for a number of consecutive events; "<<endl;
+  htmlFile<<"</tr>"<<std::endl;
+  htmlFile<<"<tr align=\"center\"><td> A cell is considered dead if it meets any of the following criteria:"<<std::endl;
+  if (deadclient_test_occupancy_) htmlFile<<"<br> A cell's digi is not present for a number of consecutive events; "<<std::endl;
+  if (deadclient_test_rechit_occupancy_) htmlFile<<"<br> A cell's rec hit is not present for a number of consecutive events; "<<std::endl;
 
-  if (deadclient_test_pedestal_ ) htmlFile<<"<br> A cell's ADC sum is consistently less than (pedestal + N sigma);"<<endl;
-  if (deadclient_test_energy_   ) htmlFile<<"<br> A cell's energy is consistently less than a threshold value;"<<endl;
-  if (deadclient_test_neighbor_ ) htmlFile<<"<br> A cell's energy is much less than the average of its neighbors;"<<endl;
-  htmlFile<<"</td>"<<endl;
-  htmlFile<<"</tr></table>"<<endl;
-  htmlFile<<"<hr><table align=\"center\" border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
-  htmlFile<<"<tr><td align=center><a href=\"Expert_"<< htmlName<<"\"><h2>Detailed Dead Cell Plots</h2> </a></br></td>"<<endl;
-  htmlFile<<"</tr></table><br><hr>"<<endl;
+  if (deadclient_test_pedestal_ ) htmlFile<<"<br> A cell's ADC sum is consistently less than (pedestal + N sigma);"<<std::endl;
+  if (deadclient_test_energy_   ) htmlFile<<"<br> A cell's energy is consistently less than a threshold value;"<<std::endl;
+  if (deadclient_test_neighbor_ ) htmlFile<<"<br> A cell's energy is much less than the average of its neighbors;"<<std::endl;
+  htmlFile<<"</td>"<<std::endl;
+  htmlFile<<"</tr></table>"<<std::endl;
+  htmlFile<<"<hr><table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
+  htmlFile<<"<tr><td align=center><a href=\"Expert_"<< htmlName<<"\"><h2>Detailed Dead Cell Plots</h2> </a></br></td>"<<std::endl;
+  htmlFile<<"</tr></table><br><hr>"<<std::endl;
   
   // Now print out problem cells
-  htmlFile <<"<br>"<<endl;
-  htmlFile << "<h2><strong>Hcal Problem Cells</strong></h2>" << endl;
-  htmlFile << "(A problem cell is listed below if its failure rate exceeds "<<(100.*minErrorFlag_)<<"%).<br><br>"<<endl;
-  htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
-  htmlFile <<"<td> Problem Dead Cells<br>(ieta, iphi, depth)</td><td align=\"center\"> Fraction of Events <br>in which cells are bad (%)</td></tr>"<<endl;
+  htmlFile <<"<br>"<<std::endl;
+  htmlFile << "<h2><strong>Hcal Problem Cells</strong></h2>" << std::endl;
+  htmlFile << "(A problem cell is listed below if its failure rate exceeds "<<(100.*minErrorFlag_)<<"%).<br><br>"<<std::endl;
+  htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
+  htmlFile <<"<td> Problem Dead Cells<br>(ieta, iphi, depth)</td><td align=\"center\"> Fraction of Events <br>in which cells are bad (%)</td></tr>"<<std::endl;
 
   if (ProblemDeadCells==0)
     {
-      if (debug_) cout <<"<HcalDeadCellClient::htmlOutput>  ERROR: can't find Problem Dead Cell plot!"<<endl;
+      if (debug_) std::cout <<"<HcalDeadCellClient::htmlOutput>  ERROR: can't find Problem Dead Cell plot!"<<std::endl;
       return;
     }
   int etabins  = ProblemDeadCells->GetNbinsX();
@@ -472,7 +587,7 @@ void HcalDeadCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
 		  else if (depth==3)
 		    (fabs(eta)<42) ? name<<"HO" : name<<"ZDC";
 		  else name <<"HE";
-		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<mydepth<<")</td><td align=\"center\">"<<ProblemDeadCellsByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<endl;
+		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<mydepth<<")</td><td align=\"center\">"<<ProblemDeadCellsByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<std::endl;
 
 		  name.str("");
 		}
@@ -482,16 +597,16 @@ void HcalDeadCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   
   
   // html page footer
-  htmlFile <<"</table> " << endl;
-  htmlFile << "</body> " << endl;
-  htmlFile << "</html> " << endl;
+  htmlFile <<"</table> " << std::endl;
+  htmlFile << "</body> " << std::endl;
+  htmlFile << "</html> " << std::endl;
 
   htmlFile.close();
   htmlExpertOutput(runNo, htmlDir, htmlName);
 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalDeadCellClient HTMLOUTPUT  -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalDeadCellClient HTMLOUTPUT  -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -506,7 +621,7 @@ void HcalDeadCellClient::htmlExpertOutput(int runNo, string htmlDir, string html
     }
 
   if (debug_>1) 
-    cout <<" <HcalDeadCellClient::htmlExpertOutput>  Preparing Expert html output ..." <<endl;
+    std::cout <<" <HcalDeadCellClient::htmlExpertOutput>  Preparing Expert html output ..." <<std::endl;
   
   string client = "DeadCellMonitor";
   htmlErrors(runNo,htmlDir,client,process_,dbe_,dqmReportMapErr_,dqmReportMapWarn_,dqmReportMapOther_); // does this do anything?
@@ -515,47 +630,47 @@ ofstream htmlFile;
   htmlFile.open((htmlDir +"Expert_"+ htmlName).c_str());
 
   // html page header
-  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << endl;
-  htmlFile << "<html>  " << endl;
-  htmlFile << "<head>  " << endl;
-  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << endl;
-  htmlFile << " http-equiv=\"content-type\">  " << endl;
-  htmlFile << "  <title>Monitor: Hcal Dead Cell Task output</title> " << endl;
-  htmlFile << "</head>  " << endl;
-  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << endl;
-  htmlFile << "<body>  " << endl;
-  htmlFile <<"<a name=\"EXPERT_DEADCELL_TOP\" href = \".\"> Back to Main HCAL DQM Page </a><br>"<<endl;
-  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Dead Cell Status Page </a><br>"<<endl;
-  htmlFile << "<br>  " << endl;
-  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << endl;
-  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Dead Cells</span></h2> " << endl;
-  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << endl;
-  htmlFile << "<hr>" << endl;
+  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << std::endl;
+  htmlFile << "<html>  " << std::endl;
+  htmlFile << "<head>  " << std::endl;
+  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << std::endl;
+  htmlFile << " http-equiv=\"content-type\">  " << std::endl;
+  htmlFile << "  <title>Monitor: Hcal Dead Cell Task output</title> " << std::endl;
+  htmlFile << "</head>  " << std::endl;
+  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << std::endl;
+  htmlFile << "<body>  " << std::endl;
+  htmlFile <<"<a name=\"EXPERT_DEADCELL_TOP\" href = \".\"> Back to Main HCAL DQM Page </a><br>"<<std::endl;
+  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Dead Cell Status Page </a><br>"<<std::endl;
+  htmlFile << "<br>  " << std::endl;
+  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << std::endl;
+  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Dead Cells</span></h2> " << std::endl;
+  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << std::endl;
+  htmlFile << "<hr>" << std::endl;
 
-  htmlFile << "<table width=100%  border = 1>"<<endl;
-  htmlFile << "<tr><td align=\"center\" colspan=1><a href=\"#OVERALL_PROBLEMS\">PROBLEM CELLS BY DEPTH </a></td></tr>"<<endl;
-  htmlFile << "<tr><td align=\"center\">"<<endl;
-  if (deadclient_test_occupancy_) htmlFile<<"<br><a href=\"#OCC_PROBLEMS\">Dead cell according to Digi Occupancy Test </a>"<<endl;
-  if (deadclient_test_rechit_occupancy_) htmlFile<<"<br><a href=\"#OCCRECHIT_PROBLEMS\">Dead cell according to RecHit Occupancy Test </a>"<<endl;
-  if (deadclient_test_pedestal_ ) htmlFile<<"<br><a href=\"#PED_PROBLEMS\">Dead cell according to Pedestal Test </a>"<<endl;
-  if (deadclient_test_energy_   ) htmlFile<<"<br><a href=\"#ENERGY_PROBLEMS\">Dead cell according to Energy Threshold Test </a>"<<endl;
-  if (deadclient_test_neighbor_ ) htmlFile<<"<br><a href=\"#NEIGHBOR_PROBLEMS\">Dead cell according to Neighbor Test </a>"<<endl;
-  htmlFile << "</td></tr>"<<endl;
-  htmlFile <<"</table>"<<endl;
-  htmlFile <<"<br><br>"<<endl;
+  htmlFile << "<table width=100%  border = 1>"<<std::endl;
+  htmlFile << "<tr><td align=\"center\" colspan=1><a href=\"#OVERALL_PROBLEMS\">PROBLEM CELLS BY DEPTH </a></td></tr>"<<std::endl;
+  htmlFile << "<tr><td align=\"center\">"<<std::endl;
+  if (deadclient_test_occupancy_) htmlFile<<"<br><a href=\"#OCC_PROBLEMS\">Dead cell according to Digi Occupancy Test </a>"<<std::endl;
+  if (deadclient_test_rechit_occupancy_) htmlFile<<"<br><a href=\"#OCCRECHIT_PROBLEMS\">Dead cell according to RecHit Occupancy Test </a>"<<std::endl;
+  if (deadclient_test_pedestal_ ) htmlFile<<"<br><a href=\"#PED_PROBLEMS\">Dead cell according to Pedestal Test </a>"<<std::endl;
+  if (deadclient_test_energy_   ) htmlFile<<"<br><a href=\"#ENERGY_PROBLEMS\">Dead cell according to Energy Threshold Test </a>"<<std::endl;
+  if (deadclient_test_neighbor_ ) htmlFile<<"<br><a href=\"#NEIGHBOR_PROBLEMS\">Dead cell according to Neighbor Test </a>"<<std::endl;
+  htmlFile << "</td></tr>"<<std::endl;
+  htmlFile <<"</table>"<<std::endl;
+  htmlFile <<"<br><br>"<<std::endl;
 
 
   // Plot overall errors
-  htmlFile << "<h2><strong><a name=\"OVERALL_PROBLEMS\">Eta-Phi Maps of Problem Cells By Depth</strong></h2>"<<endl;
-  htmlFile <<" These plots of problem cells combine results from all dead cell tests<br>"<<endl;
-  htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-  htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
+  htmlFile << "<h2><strong><a name=\"OVERALL_PROBLEMS\">Eta-Phi Maps of Problem Cells By Depth</strong></h2>"<<std::endl;
+  htmlFile <<" These plots of problem cells combine results from all dead cell tests<br>"<<std::endl;
+  htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+  htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
   
   // Depths are stored as:  0:  HB/HF depth 1, 1:  HB/HF 2, 2:  HE 3, 3:  HO/ZDC, 4: HE 1, 5:  HE2
@@ -563,164 +678,164 @@ ofstream htmlFile;
   int mydepth[6]={0,1,4,5,2,3};
   for (int i=0;i<3;++i)
     {
-      htmlFile << "<tr align=\"left\">" << endl;
+      htmlFile << "<tr align=\"left\">" << std::endl;
       htmlAnyHisto(runNo,ProblemDeadCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlAnyHisto(runNo,ProblemDeadCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlFile <<"</tr>"<<endl;
+      htmlFile <<"</tr>"<<std::endl;
     }
 
-  htmlFile <<"</table>"<<endl;
-  htmlFile <<"<br><hr><br>"<<endl;
+  htmlFile <<"</table>"<<std::endl;
+  htmlFile <<"<br><hr><br>"<<std::endl;
   
   // Dead cells failing digi occupancy tests
   if (deadclient_test_occupancy_)
     {
-      htmlFile << "<h2><strong><a name=\"OCC_PROBLEMS\">Digi Occupancy Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its digi is absent for "<<deadclient_checkNevents_occupancy_<<" consecutive events<br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"OCC_PROBLEMS\">Digi Occupancy Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its digi is absent for "<<deadclient_checkNevents_<<" consecutive events<br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,UnoccupiedDeadCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,UnoccupiedDeadCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Dead cells failing rec hit occupancy tests
   if (deadclient_test_rechit_occupancy_)
     {
-      htmlFile << "<h2><strong><a name=\"OCCRECHIT_PROBLEMS\">rec HitOccupancy Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit is absent for "<<deadclient_checkNevents_rechit_occupancy_<<" consecutive events<br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"OCCRECHIT_PROBLEMS\">rec HitOccupancy Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit is absent for "<<deadclient_checkNevents_<<" consecutive events<br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,UnoccupiedRecHitsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,UnoccupiedRecHitsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Dead cells failing pedestal tests
   if (deadclient_test_pedestal_)
     {
-      htmlFile << "<h2><strong><a name=\"PED_PROBLEMS\">Pedestal Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its ADC sum is below (pedestal + Nsigma) for  "<<deadclient_checkNevents_pedestal_<<" consecutive events <br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"PED_PROBLEMS\">Pedestal Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its ADC sum is below (pedestal + Nsigma) for  "<<deadclient_checkNevents_<<" consecutive events <br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,BelowPedestalDeadCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,BelowPedestalDeadCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (deadclient_makeDiagnostics_)
 	{
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
 	  htmlAnyHisto(runNo, d_HEnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
 	  htmlAnyHisto(runNo, d_HFnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (deadclient_makeDiagnostics_)
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Dead cells failing energy tests
   if (deadclient_test_energy_)
     {
-      htmlFile << "<h2><strong><a name=\"ENERGY_PROBLEMS\">Energy Threshold Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit energy is below threshold for "<<deadclient_checkNevents_energy_<<" consecutive events <br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"ENERGY_PROBLEMS\">Energy Threshold Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit energy is below threshold for "<<deadclient_checkNevents_<<" consecutive events <br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,BelowEnergyThresholdCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,BelowEnergyThresholdCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (deadclient_makeDiagnostics_)
 	{
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
 	  htmlAnyHisto(runNo, d_HErechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
 	  htmlAnyHisto(runNo, d_HFrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (deadclient_makeDiagnostics_)
 
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Dead cells failing neighbor tests
   if (deadclient_test_neighbor_)
     {
-      htmlFile << "<h2><strong><a name=\"NEIGHBOR_PROBLEMS\">Neighbor Energy Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit energy is significantly less than the average of its surrounding neighbors <br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"NEIGHBOR_PROBLEMS\">Neighbor Energy Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit energy is significantly less than the average of its surrounding neighbors <br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,BelowNeighborsDeadCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,BelowNeighborsDeadCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (deadclient_makeDiagnostics_)
 	{
 	  gStyle->SetPalette(1);  // back to rainbow coloring
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBenergyVsNeighbor, "i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo, d_HEenergyVsNeighbor, "i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOenergyVsNeighbor, "i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo, d_HFenergyVsNeighbor, "i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (deadclient_makeDiagnostics_)
 
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
 
-  htmlFile <<"<br><hr><br><a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top of Page </a><br>"<<endl;
-  htmlFile <<"<a href = \".\"> Back to Main HCAL DQM Page </a><br>"<<endl;
-  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Dead Cell Status Page </a><br>"<<endl;
+  htmlFile <<"<br><hr><br><a href= \"#EXPERT_DEADCELL_TOP\" > Back to Top of Page </a><br>"<<std::endl;
+  htmlFile <<"<a href = \".\"> Back to Main HCAL DQM Page </a><br>"<<std::endl;
+  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Dead Cell Status Page </a><br>"<<std::endl;
 
-  htmlFile << "</body> " << endl;
-  htmlFile << "</html> " << endl;
+  htmlFile << "</body> " << std::endl;
+  htmlFile << "</html> " << std::endl;
   
   htmlFile.close();
 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalDeadCellClient  HTMLEXPERTOUTPUT ->"<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalDeadCellClient  HTMLEXPERTOUTPUT ->"<<cpu_timer.cpuTime()<<std::endl;
     }
   return;
 } // void HcalDeadCellClient::htmlExpertOutput(...)
@@ -782,6 +897,70 @@ void HcalDeadCellClient::loadHistograms(TFile* infile)
 	}
 
     } //for (int i=0;i<6;++i)
+
+  if (deadclient_makeDiagnostics_)
+    {
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HB_normped";
+      d_HBnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HB_rechitenergy";
+      d_HBrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HB_energyVsNeighbor";
+      d_HBenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HE_normped";
+      d_HEnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HE_rechitenergy";
+      d_HErechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HE_energyVsNeighbor";
+      d_HEenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HO_normped";
+      d_HOnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HO_rechitenergy";
+      d_HOrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HO_energyVsNeighbor";
+      d_HOenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HF_normped";
+      d_HFnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HF_rechitenergy";
+      d_HFrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name<<process_.c_str()<<"DeadCellMonitor_Hcal/diagnostics/pedestal/HF_energyVsNeighbor";
+      d_HFenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+    } // if (deadclient_makeDiagnostics_)
+
+
+
+  // Scale rate histograms
+  if (ievt_>0)
+    {
+      ProblemDeadCells->Scale(1./ievt_);
+      for (int i=0;i<6;++i)
+	ProblemDeadCellsByDepth[i]->Scale(1./ievt_);
+      // scale other histograms here as well?
+    }
+
+  // Force min/max on problemcells
+  for (int i=0;i<6;++i)
+    {
+      if (ProblemDeadCellsByDepth[i])
+	{
+	  ProblemDeadCellsByDepth[i]->SetMaximum(1);
+	  ProblemDeadCellsByDepth[i]->SetMinimum(0);
+	}
+      name.str("");
+
+    } // for (int i=0;i<6;++i)
+
   return;
 } // void HcalDeadCellClient::loadHistograms(...)
 

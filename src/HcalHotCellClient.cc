@@ -5,6 +5,8 @@
 #include <math.h>
 #include <iostream>
 
+#define BITSHIFT 6
+
 HcalHotCellClient::HcalHotCellClient(){} // constructor 
 
 void HcalHotCellClient::init(const ParameterSet& ps, DQMStore* dbe,string clientName){
@@ -23,15 +25,13 @@ void HcalHotCellClient::init(const ParameterSet& ps, DQMStore* dbe,string client
   hotclient_test_energy_            = ps.getUntrackedParameter<bool>("HotCellClient_test_energy",true);
 
   hotclient_checkNevents_ = ps.getUntrackedParameter<int>("HotCellClient_checkNevents",100);
-  hotclient_checkNevents_persistent_ = ps.getUntrackedParameter<int>("HotCellClient_checkNevents_persistent",hotclient_checkNevents_);
-  hotclient_checkNevents_pedestal_  = ps.getUntrackedParameter<int>("HotCellClient_checkNevents_pedestal" ,hotclient_checkNevents_);
-  hotclient_checkNevents_neighbor_  = ps.getUntrackedParameter<int>("HotCellClient_checkNevents_neighbor" ,hotclient_checkNevents_);
-  hotclient_checkNevents_energy_    = ps.getUntrackedParameter<int>("HotCellClient_checkNevents_energy"   ,hotclient_checkNevents_);
 
   minErrorFlag_ = ps.getUntrackedParameter<double>("HotCellClient_minErrorFlag",0.0);
 
   hotclient_makeDiagnostics_ = ps.getUntrackedParameter<bool>("HotCellClient_makeDiagnosticPlots",false);
 
+  dump2database_ = false; // eventually, make this a configurable boolean
+  
   // Set histograms to NULL
   ProblemHotCells=0;
   for (int i=0;i<6;++i)
@@ -43,6 +43,7 @@ void HcalHotCellClient::init(const ParameterSet& ps, DQMStore* dbe,string client
       AboveNeighborsHotCellsByDepth[i]        =0;
       AboveEnergyThresholdCellsByDepth[i]     =0;
       d_avgrechitenergymap[i]                 =0;
+      d_avgrechitoccupancymap[i]              =0;
     }  
 
   if (hotclient_makeDiagnostics_)
@@ -73,7 +74,7 @@ void HcalHotCellClient::init(const ParameterSet& ps, DQMStore* dbe,string client
 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient INIT -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient INIT -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -93,14 +94,14 @@ void HcalHotCellClient::beginJob(const EventSetup& eventSetup)
       cpu_timer.reset(); cpu_timer.start();
     }
 
-  if ( debug_>1 ) cout << "HcalHotCellClient: beginJob" << endl;
+  if ( debug_>1 ) std::cout << "HcalHotCellClient: beginJob" << std::endl;
 
   ievt_ = 0;
   jevt_ = 0;
   this->setup();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient BEGINJOB -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient BEGINJOB -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -109,33 +110,129 @@ void HcalHotCellClient::beginJob(const EventSetup& eventSetup)
 
 void HcalHotCellClient::beginRun(void)
 {
-  if ( debug_>1 ) cout << "HcalHotCellClient: beginRun" << endl;
+  if ( debug_>1 ) std::cout << "HcalHotCellClient: beginRun" << std::endl;
 
   jevt_ = 0;
   this->setup();
   this->resetAllME();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient BEGINRUN -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient BEGINRUN -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
 } // void HcalHotCellClient::beginRun(void)
 
 
-void HcalHotCellClient::endJob(void) 
+void HcalHotCellClient::endJob(std::map<HcalDetId, unsigned int>& myqual) 
 {
   if (showTiming_)
     {
       cpu_timer.reset(); cpu_timer.start();
     }
 
-  if ( debug_>1 ) cout << "HcalHotCellClient: endJob, ievt = " << ievt_ << endl;
+  if ( debug_>1 ) std::cout << "HcalHotCellClient: endJob, ievt = " << ievt_ << std::endl;
 
+  if (dump2database_==true) // don't do anything special unless specifically asked to dump db file
+    {
+      int eta,phi;
+      float binval;
+      int mydepth;
+
+      int subdet;
+      char* subdetname;
+      if (debug_>1)
+	{
+	  std::cout <<"<HcalHotCellClient>  Summary of Hot Cells in Run: "<<std::endl;
+	  std::cout <<"(Error rate must be >= "<<minErrorFlag_*100.<<"% )"<<std::endl;  
+	}
+
+      float etaMin = ProblemHotCells->GetXaxis()->GetXmin();
+      float phiMin = ProblemHotCells->GetYaxis()->GetXmin();
+      int etabins  = ProblemHotCells->GetNbinsX();
+      int phibins  = ProblemHotCells->GetNbinsY();
+      for (int ieta=1;ieta<=etabins;++ieta)
+	{
+	  for (int iphi=1;iphi<=phibins;++iphi)
+	    {
+	      eta=ieta+int(etaMin)-1;
+	      phi=iphi+int(phiMin)-1;
+	      
+	      for (int d=0;d<6;++d)
+		{
+		  // ProblemHotCells have already been normalized
+		  binval=ProblemHotCellsByDepth[d]->GetBinContent(ieta,iphi);
+		  
+		  // Set subdetector labels for output
+		  if (d<2) // HB/HF
+		    {
+		      if (abs(eta)<29)
+			{
+			  subdetname="HB";
+			  subdet=1;
+			}
+		      else
+			{
+			  subdetname="HF";
+			  subdet=4;
+			}
+		    }
+		  else if (d==3)
+		    {
+		      if (abs(eta)==43)
+			{
+			  subdetname="ZDC";
+			  subdet=7; // correct value??
+			}
+		      else
+			{
+			  subdetname="HO";
+			  subdet=3;
+			}
+		    }
+		  else
+		    {
+		      subdetname="HE";
+		      subdet=2;
+		    }
+		  // Set correct depth label
+		  if (d>3)
+		    mydepth=d-3;
+		  else
+		    mydepth=d+1;
+		  HcalDetId myid((HcalSubdetector)(subdet), eta, phi, mydepth);
+		  // Need this to keep from flagging non-existent HE/HF cells
+		  if (!validDetId((HcalSubdetector)(subdet), eta, phi, mydepth))
+		    continue;
+		  if (binval<=minErrorFlag_)
+		    continue;
+		  if (debug_>0)
+		    std::cout <<"Hot Cell "<<subdet<<"("<<eta<<", "<<phi<<", "<<mydepth<<"):  "<<binval*100.<<"%"<<std::endl;
+
+		  // if we've reached here, hot cell condition was met
+		  int value=1;
+
+		  if (myqual.find(myid)==myqual.end())
+		    {
+		      myqual[myid]=(value<<BITSHIFT);  // hotcell shifted to bit 6
+		    }
+		  else
+		    {
+		      int mask=(1<<BITSHIFT);
+		      if (value==1)
+			myqual[myid] |=mask;
+		  
+		      else
+			myqual[myid] &=~mask;
+		    }
+		} // for (int d=0;d<6;++d) // loop over depth histograms
+	    } // for (int iphi=1;iphi<=phibins;++iphi)
+	} // for (int ieta=1;ieta<=etabins;++ieta)
+    } // if (dump2database_==true)
   this->cleanup();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient ENDJOB -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient ENDJOB -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -149,12 +246,11 @@ void HcalHotCellClient::endRun(void)
       cpu_timer.reset(); cpu_timer.start();
     }
 
-  if ( debug_>1 ) cout << "HcalHotCellClient: endRun, jevt = " << jevt_ << endl;
-
+  // write to DB here as well?
   this->cleanup();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient ENDRUN -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient ENDRUN -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -189,6 +285,7 @@ void HcalHotCellClient::cleanup(void)
 	  if (AboveNeighborsHotCellsByDepth[i])        delete AboveNeighborsHotCellsByDepth[i];
 	  if (AboveEnergyThresholdCellsByDepth[i])     delete AboveEnergyThresholdCellsByDepth[i];
 	  if (d_avgrechitenergymap[i])                 delete d_avgrechitenergymap[i];
+	  if (d_avgrechitoccupancymap[i])              delete d_avgrechitoccupancymap[i];
 	}
       
       if (hotclient_makeDiagnostics_)
@@ -226,6 +323,7 @@ void HcalHotCellClient::cleanup(void)
       AboveNeighborsHotCellsByDepth[i]        =0;
       AboveEnergyThresholdCellsByDepth[i]     =0;
       d_avgrechitenergymap[i]                 =0;
+      d_avgrechitoccupancymap[i]              =0;
     }
   
   if (hotclient_makeDiagnostics_)
@@ -254,7 +352,7 @@ void HcalHotCellClient::cleanup(void)
   dqmQtests_.clear();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient CLEANUP -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient CLEANUP -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -269,22 +367,13 @@ void HcalHotCellClient::report()
       cpu_timer.reset(); cpu_timer.start();
     }
 
-  if ( debug_>1 ) cout << "HcalHotCellClient: report" << endl;
+  if ( debug_>1 ) std::cout << "HcalHotCellClient: report" << std::endl;
   this->setup();
 
-  ostringstream name;
-  name<<process_.c_str()<<"Hcal/HotCellMonitor_Hcal/Hot Cell Task Event Number";
-  MonitorElement* me = dbe_->get(name.str().c_str());
-  if ( me ) {
-    string s = me->valueString();
-    ievt_ = -1;
-    sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
-    if ( debug_>1 ) cout << "Found '" << name.str().c_str() << "'" << endl;
-  }
   getHistograms();
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient REPORT -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient REPORT -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -300,6 +389,16 @@ void HcalHotCellClient::getHistograms()
     }
 
   ostringstream name;
+  name<<process_.c_str()<<"Hcal/HotCellMonitor_Hcal/Hot Cell Task Event Number";
+  MonitorElement* me = dbe_->get(name.str().c_str());
+  if ( me ) {
+    string s = me->valueString();
+    ievt_ = -1;
+    sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
+    if ( debug_>1 ) std::cout << "Found '" << name.str().c_str() << "'" << std::endl;
+  }
+  name.str("");
+
   // dummy histograms
   TH2F* dummy2D = new TH2F();
   TH1F* dummy1D = new TH1F();
@@ -309,19 +408,68 @@ void HcalHotCellClient::getHistograms()
 
   // Grab individual histograms
   name<<process_.c_str()<<"HotCellMonitor_Hcal/ ProblemHotCells";
-  ProblemHotCells = getAnyHisto(dummy2D, name.str(), process_, dbe_, debug_, cloneME_);
+  ProblemHotCells = getAnyHisto(dummy2D, name.str(), process_, dbe_, debug_, cloneME_,1./ievt_);
   name.str("");
-
+  if (ievt_>0 && ProblemHotCells!=0) 
+    {
+      ProblemHotCells->Scale(1./ievt_);
+      ProblemHotCells->SetMinimum(0);
+      ProblemHotCells->SetMaximum(1);
+    }
   getSJ6histos("HotCellMonitor_Hcal/problem_hotcells/", " Problem Hot Cell Rate", ProblemHotCellsByDepth);
+  
 
   if (hotclient_test_persistent_) getSJ6histos("HotCellMonitor_Hcal/hot_rechit_always_above_threshold/",   "Hot Cells Persistently Above Energy Threshold", AbovePersistentThresholdCellsByDepth);
   if (hotclient_test_pedestal_)  getSJ6histos("HotCellMonitor_Hcal/hot_pedestaltest/", "Hot Cells Above Pedestal", AbovePedestalHotCellsByDepth);
   if (hotclient_test_neighbor_)  getSJ6histos("HotCellMonitor_Hcal/hot_neighbortest/", "Hot Cells Failing Neighbor Test", AboveNeighborsHotCellsByDepth);
   if (hotclient_test_energy_)    getSJ6histos("HotCellMonitor_Hcal/hot_rechit_above_threshold/",   "Hot Cells Above Energy Threshold", AboveEnergyThresholdCellsByDepth);
+  if (ievt_>0)
+    {
+      for (int i=0;i<6;++i)
+	{
+	  if (ProblemHotCellsByDepth[i]) 
+	    {
+	      ProblemHotCellsByDepth[i]->Scale(1./ievt_);
+	      ProblemHotCellsByDepth[i]->SetMinimum(0.);
+	      ProblemHotCellsByDepth[i]->SetMaximum(1.);
+	    }
+	  if (AbovePersistentThresholdCellsByDepth[i])
+	   {
+	     AbovePersistentThresholdCellsByDepth[i]->Scale(1./ievt_);
+	     AbovePersistentThresholdCellsByDepth[i]->SetMinimum(0.);
+	     AbovePersistentThresholdCellsByDepth[i]->SetMaximum(1.);
+	   }
+	  if (AbovePedestalHotCellsByDepth[i])
+	    {
+	      AbovePedestalHotCellsByDepth[i]->Scale(1./ievt_);
+	      AbovePedestalHotCellsByDepth[i]->SetMinimum(0.);
+	      AbovePedestalHotCellsByDepth[i]->SetMaximum(1.);
+	    }
+	  if (AboveNeighborsHotCellsByDepth[i])
+	    {
+	      AboveNeighborsHotCellsByDepth[i]->Scale(1./ievt_);
+	      AboveNeighborsHotCellsByDepth[i]->SetMinimum(0.);
+	      AboveNeighborsHotCellsByDepth[i]->SetMaximum(1.);
+	    }
+	    if (AboveEnergyThresholdCellsByDepth[i])
+	      {
+		AboveEnergyThresholdCellsByDepth[i]->Scale(1./ievt_);
+		AboveEnergyThresholdCellsByDepth[i]->SetMinimum(0.);
+		AboveEnergyThresholdCellsByDepth[i]->SetMaximum(1.);
+	      }
+	}
+    }
 
   if (hotclient_makeDiagnostics_)
     {
-      getSJ6histos("HotCellMonitor_Hcal/diagnostics/rechitenergy/","Average rec hit energy per cell",d_avgrechitenergymap);
+      getSJ6histos("HotCellMonitor_Hcal/diagnostics/rechitenergy/","Rec hit energy per cell",d_avgrechitenergymap);
+      getSJ6histos("HotCellMonitor_Hcal/diagnostics/rechitenergy/","Rec hit occupancy per cell",d_avgrechitoccupancymap);
+      /*
+	// Doing the division here doesn't affect the ME's!
+      for (int i=0;i<6;++i)
+	d_avgrechitenergymap[i]->Divide(d_avgrechitoccupancymap[i]);
+      */
+      // At some point, clean these up so that histograms are only retrieved if corresponding process ran in Task
       d_HBnormped=getAnyHisto(dummy1D,(process_+"HotCellMonitor_Hcal/diagnostics/pedestal/HB_normped").c_str(), process_, dbe_, debug_, cloneME_);
       d_HBrechitenergy=getAnyHisto(dummy1D,(process_+"HotCellMonitor_Hcal/diagnostics/rechitenergy/HB_rechitenergy").c_str(), process_, dbe_, debug_, cloneME_);
       d_HBenergyVsNeighbor=getAnyHisto(dummy2D,(process_+"HotCellMonitor_Hcal/diagnostics/neighborcells/HB_energyVsNeighbor").c_str(), process_, dbe_, debug_, cloneME_);
@@ -338,6 +486,11 @@ void HcalHotCellClient::getHistograms()
 
 
   // Force min/max on problemcells
+  if (ProblemHotCells) 
+    {
+      ProblemHotCells->SetMaximum(1);
+      ProblemHotCells->SetMinimum(0);
+    }
   for (int i=0;i<6;++i)
     {
       if (ProblemHotCellsByDepth[i])
@@ -350,7 +503,7 @@ void HcalHotCellClient::getHistograms()
     } // for (int i=0;i<6;++i)
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient GETHISTOGRAMS -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient GETHISTOGRAMS -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -367,12 +520,12 @@ void HcalHotCellClient::analyze(void)
   jevt_++;
   if ( jevt_ % 10 == 0 ) 
     {
-      if ( debug_>1 ) cout << "<HcalHotCellClient::analyze>  Running analyze "<<endl;
+      if ( debug_>1 ) std::cout << "<HcalHotCellClient::analyze>  Running analyze "<<std::endl;
     }
-  //getHistograms(); // unnecessary, I think
+  getHistograms(); 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient ANALYZE -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient ANALYZE -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -453,7 +606,7 @@ void HcalHotCellClient::resetAllME()
     } // for (int i=0;i<6;++i)
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient RESETALLME -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient RESETALLME -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -468,7 +621,7 @@ void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
       cpu_timer.reset(); cpu_timer.start();
     }
 
-  if (debug_>1) cout << "Preparing HcalHotCellClient html output ..." << endl;
+  if (debug_>1) std::cout << "Preparing HcalHotCellClient html output ..." << std::endl;
 
   string client = "HotCellMonitor";
 
@@ -476,62 +629,62 @@ void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   htmlFile.open((htmlDir + htmlName).c_str());
 
   // html page header
-  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << endl;
-  htmlFile << "<html>  " << endl;
-  htmlFile << "<head>  " << endl;
-  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << endl;
-  htmlFile << " http-equiv=\"content-type\">  " << endl;
-  htmlFile << "  <title>Monitor: Hcal Hot Cell Task output</title> " << endl;
-  htmlFile << "</head>  " << endl;
-  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << endl;
-  htmlFile << "<body>  " << endl;
-  htmlFile << "<br>  " << endl;
-  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << endl;
-  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Hot Cells</span></h2> " << endl;
+  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << std::endl;
+  htmlFile << "<html>  " << std::endl;
+  htmlFile << "<head>  " << std::endl;
+  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << std::endl;
+  htmlFile << " http-equiv=\"content-type\">  " << std::endl;
+  htmlFile << "  <title>Monitor: Hcal Hot Cell Task output</title> " << std::endl;
+  htmlFile << "</head>  " << std::endl;
+  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << std::endl;
+  htmlFile << "<body>  " << std::endl;
+  htmlFile << "<br>  " << std::endl;
+  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << std::endl;
+  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Hot Cells</span></h2> " << std::endl;
 
-  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << endl;
-  htmlFile << "<hr>" << endl;
+  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << std::endl;
+  htmlFile << "<hr>" << std::endl;
 
-  htmlFile << "<h2><strong>Hcal Hot Cell Status</strong></h2>" << endl;
-  htmlFile << "<h3>" << endl;
-  htmlFile << "</h3>" << endl;
+  htmlFile << "<h2><strong>Hcal Hot Cell Status</strong></h2>" << std::endl;
+  htmlFile << "<h3>" << std::endl;
+  htmlFile << "</h3>" << std::endl;
 
-  htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
+  htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
   gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
   htmlAnyHisto(runNo,ProblemHotCells,"i#eta","i#phi", 92, htmlFile, htmlDir);
-  htmlFile<<"</tr>"<<endl;
-  htmlFile<<"<tr align=\"center\"><td> A cell is considered hot if it meets any of the following criteria:"<<endl;
-  if (hotclient_test_persistent_) htmlFile<<"<br> A cell's ADC sum is more than (pedestal + N sigma); "<<endl;
-  if (hotclient_test_pedestal_ ) htmlFile<<"<br> A cell's energy is above some threshold value X;"<<endl;
-  if (hotclient_test_energy_   ) htmlFile<<"<br> A cell's energy is consistently above some threshold value Y (where Y does not necessarily equal X);"<<endl;
-  if (hotclient_test_neighbor_ ) htmlFile<<"<br> A cell's energy is much more than the sum of its neighbors;"<<endl;
-  htmlFile<<"</td>"<<endl;
-  htmlFile<<"</tr></table>"<<endl;
-  htmlFile<<"<hr><table align=\"center\" border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
-  htmlFile<<"<tr><td align=center><a href=\"Expert_"<< htmlName<<"\"><h2>Detailed Hot Cell Plots</h2> </a></br></td>"<<endl;
-  htmlFile<<"</tr></table><br><hr>"<<endl;
+  htmlFile<<"</tr>"<<std::endl;
+  htmlFile<<"<tr align=\"center\"><td> A cell is considered hot if it meets any of the following criteria:"<<std::endl;
+  if (hotclient_test_persistent_) htmlFile<<"<br> A cell's ADC sum is more than (pedestal + N sigma); "<<std::endl;
+  if (hotclient_test_pedestal_ ) htmlFile<<"<br> A cell's energy is above some threshold value X;"<<std::endl;
+  if (hotclient_test_energy_   ) htmlFile<<"<br> A cell's energy is consistently above some threshold value Y (where Y does not necessarily equal X);"<<std::endl;
+  if (hotclient_test_neighbor_ ) htmlFile<<"<br> A cell's energy is much more than the sum of its neighbors;"<<std::endl;
+  htmlFile<<"</td>"<<std::endl;
+  htmlFile<<"</tr></table>"<<std::endl;
+  htmlFile<<"<hr><table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
+  htmlFile<<"<tr><td align=center><a href=\"Expert_"<< htmlName<<"\"><h2>Detailed Hot Cell Plots</h2> </a></br></td>"<<std::endl;
+  htmlFile<<"</tr></table><br><hr>"<<std::endl;
   
   // Now print out problem cells
-  htmlFile <<"<br>"<<endl;
-  htmlFile << "<h2><strong>Hcal Problem Cells</strong></h2>" << endl;
-  htmlFile << "(A problem cell is listed below if its failure rate exceeds "<<(100.*minErrorFlag_)<<"%).<br><br>"<<endl;
-  htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
-  htmlFile << "<tr align=\"center\">" << endl;
-  htmlFile <<"<td> Problem Hot Cells<br>(ieta, iphi, depth)</td><td align=\"center\"> Fraction of Events <br>in which cells are bad (%)</td></tr>"<<endl;
+  htmlFile <<"<br>"<<std::endl;
+  htmlFile << "<h2><strong>Hcal Problem Cells</strong></h2>" << std::endl;
+  htmlFile << "(A problem cell is listed below if its failure rate exceeds "<<(100.*minErrorFlag_)<<"%).<br><br>"<<std::endl;
+  htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
+  htmlFile << "<tr align=\"center\">" << std::endl;
+  htmlFile <<"<td> Problem Hot Cells<br>(ieta, iphi, depth)</td><td align=\"center\"> Fraction of Events <br>in which cells are bad (%)</td></tr>"<<std::endl;
 
   if (ProblemHotCells==0)
     {
-      if (debug_) cout <<"<HcalHotCellClient::htmlOutput>  ERROR: can't find Problem Hot Cell plot!"<<endl;
+      if (debug_) std::cout <<"<HcalHotCellClient::htmlOutput>  ERROR: can't find Problem Hot Cell plot!"<<std::endl;
       return;
     }
   int etabins  = ProblemHotCells->GetNbinsX();
@@ -565,7 +718,7 @@ void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
 		  else if (depth==3)
 		    (fabs(eta)<42) ? name<<"HO" : name<<"ZDC";
 		  else name <<"HE";
-		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<mydepth<<")</td><td align=\"center\">"<<ProblemHotCellsByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<endl;
+		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<mydepth<<")</td><td align=\"center\">"<<ProblemHotCellsByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<std::endl;
 
 		  name.str("");
 		}
@@ -575,16 +728,16 @@ void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   
   
   // html page footer
-  htmlFile <<"</table> " << endl;
-  htmlFile << "</body> " << endl;
-  htmlFile << "</html> " << endl;
+  htmlFile <<"</table> " << std::endl;
+  htmlFile << "</body> " << std::endl;
+  htmlFile << "</html> " << std::endl;
 
   htmlFile.close();
   htmlExpertOutput(runNo, htmlDir, htmlName);
 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient HTMLOUTPUT  -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient HTMLOUTPUT  -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;
@@ -599,7 +752,7 @@ void HcalHotCellClient::htmlExpertOutput(int runNo, string htmlDir, string htmlN
     }
 
   if (debug_>1) 
-    cout <<" <HcalHotCellClient::htmlExpertOutput>  Preparing Expert html output ..." <<endl;
+    std::cout <<" <HcalHotCellClient::htmlExpertOutput>  Preparing Expert html output ..." <<std::endl;
   
   string client = "HotCellMonitor";
   htmlErrors(runNo,htmlDir,client,process_,dbe_,dqmReportMapErr_,dqmReportMapWarn_,dqmReportMapOther_); // does this do anything?
@@ -608,46 +761,46 @@ ofstream htmlFile;
   htmlFile.open((htmlDir +"Expert_"+ htmlName).c_str());
 
   // html page header
-  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << endl;
-  htmlFile << "<html>  " << endl;
-  htmlFile << "<head>  " << endl;
-  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << endl;
-  htmlFile << " http-equiv=\"content-type\">  " << endl;
-  htmlFile << "  <title>Monitor: Hcal Hot Cell Task output</title> " << endl;
-  htmlFile << "</head>  " << endl;
-  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << endl;
-  htmlFile << "<body>  " << endl;
-  htmlFile <<"<a name=\"EXPERT_HOTCELL_TOP\" href = \".\"> Back to Main HCAL DQM Page </a><br>"<<endl;
-  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Hot Cell Status Page </a><br>"<<endl;
-  htmlFile << "<br>  " << endl;
-  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << endl;
-  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Hot Cells</span></h2> " << endl;
-  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << endl;
-  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << endl;
-  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << endl;
-  htmlFile << "<hr>" << endl;
+  htmlFile << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">  " << std::endl;
+  htmlFile << "<html>  " << std::endl;
+  htmlFile << "<head>  " << std::endl;
+  htmlFile << "  <meta content=\"text/html; charset=ISO-8859-1\"  " << std::endl;
+  htmlFile << " http-equiv=\"content-type\">  " << std::endl;
+  htmlFile << "  <title>Monitor: Hcal Hot Cell Task output</title> " << std::endl;
+  htmlFile << "</head>  " << std::endl;
+  htmlFile << "<style type=\"text/css\"> td { font-weight: bold } </style>" << std::endl;
+  htmlFile << "<body>  " << std::endl;
+  htmlFile <<"<a name=\"EXPERT_HOTCELL_TOP\" href = \".\"> Back to Main HCAL DQM Page </a><br>"<<std::endl;
+  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Hot Cell Status Page </a><br>"<<std::endl;
+  htmlFile << "<br>  " << std::endl;
+  htmlFile << "<h2>Run:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << runNo << "</span></h2>" << std::endl;
+  htmlFile << "<h2>Monitoring task:&nbsp;&nbsp;&nbsp;&nbsp; <span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">Hcal Hot Cells</span></h2> " << std::endl;
+  htmlFile << "<h2>Events processed:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;" << std::endl;
+  htmlFile << "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span " << std::endl;
+  htmlFile << " style=\"color: rgb(0, 0, 153);\">" << ievt_ << "</span></h2>" << std::endl;
+  htmlFile << "<hr>" << std::endl;
 
-  htmlFile << "<table width=100%  border = 1>"<<endl;
-  htmlFile << "<tr><td align=\"center\" colspan=1><a href=\"#OVERALL_PROBLEMS\">PROBLEM CELLS BY DEPTH </a></td></tr>"<<endl;
-  htmlFile << "<tr><td align=\"center\">"<<endl;
-  if (hotclient_test_pedestal_ ) htmlFile<<"<br><a href=\"#PED_PROBLEMS\">Hot cell according to Pedestal Test </a>"<<endl;
-  if (hotclient_test_energy_   ) htmlFile<<"<br><a href=\"#ENERGY_PROBLEMS\">Hot cell according to Energy Threshold Test </a>"<<endl;
-  if (hotclient_test_persistent_) htmlFile<<"<br><a href=\"#PERSISTENT_PROBLEMS\">Hot cell consistently above a certain energy </a>"<<endl;
-  if (hotclient_test_neighbor_ ) htmlFile<<"<br><a href=\"#NEIGHBOR_PROBLEMS\">Hot cell according to Neighbor Test </a>"<<endl;
-  htmlFile << "</td></tr>"<<endl;
-  htmlFile <<"</table>"<<endl;
-  htmlFile <<"<br><br>"<<endl;
+  htmlFile << "<table width=100%  border = 1>"<<std::endl;
+  htmlFile << "<tr><td align=\"center\" colspan=1><a href=\"#OVERALL_PROBLEMS\">PROBLEM CELLS BY DEPTH </a></td></tr>"<<std::endl;
+  htmlFile << "<tr><td align=\"center\">"<<std::endl;
+  if (hotclient_test_pedestal_ ) htmlFile<<"<br><a href=\"#PED_PROBLEMS\">Hot cell according to Pedestal Test </a>"<<std::endl;
+  if (hotclient_test_energy_   ) htmlFile<<"<br><a href=\"#ENERGY_PROBLEMS\">Hot cell according to Energy Threshold Test </a>"<<std::endl;
+  if (hotclient_test_persistent_) htmlFile<<"<br><a href=\"#PERSISTENT_PROBLEMS\">Hot cell consistently above a certain energy </a>"<<std::endl;
+  if (hotclient_test_neighbor_ ) htmlFile<<"<br><a href=\"#NEIGHBOR_PROBLEMS\">Hot cell according to Neighbor Test </a>"<<std::endl;
+  htmlFile << "</td></tr>"<<std::endl;
+  htmlFile <<"</table>"<<std::endl;
+  htmlFile <<"<br><br>"<<std::endl;
 
 
   // Plot overall errors
-  htmlFile << "<h2><strong><a name=\"OVERALL_PROBLEMS\">Eta-Phi Maps of Problem Cells By Depth</strong></h2>"<<endl;
-  htmlFile <<" These plots of problem cells combine results from all hot cell tests<br>"<<endl;
-  htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<endl;
-  htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-  htmlFile << "cellpadding=\"10\"> " << endl;
+  htmlFile << "<h2><strong><a name=\"OVERALL_PROBLEMS\">Eta-Phi Maps of Problem Cells By Depth</strong></h2>"<<std::endl;
+  htmlFile <<" These plots of problem cells combine results from all hot cell tests<br>"<<std::endl;
+  htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+  htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
   
   // Depths are stored as:  0:  HB/HF depth 1, 1:  HB/HF 2, 2:  HE 3, 3:  HO/ZDC, 4: HE 1, 5:  HE2
@@ -655,146 +808,146 @@ ofstream htmlFile;
   int mydepth[6]={0,1,4,5,2,3};
   for (int i=0;i<3;++i)
     {
-      htmlFile << "<tr align=\"left\">" << endl;
+      htmlFile << "<tr align=\"left\">" << std::endl;
       htmlAnyHisto(runNo,ProblemHotCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlAnyHisto(runNo,ProblemHotCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlFile <<"</tr>"<<endl;
+      htmlFile <<"</tr>"<<std::endl;
     }
 
-  htmlFile <<"</table>"<<endl;
-  htmlFile <<"<br><hr><br>"<<endl;
+  htmlFile <<"</table>"<<std::endl;
+  htmlFile <<"<br><hr><br>"<<std::endl;
   
  
   // Hot cells failing pedestal tests
   if (hotclient_test_pedestal_)
     {
-      htmlFile << "<h2><strong><a name=\"PED_PROBLEMS\">Pedestal Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its ADC sum is above (pedestal + Nsigma) for  "<<hotclient_checkNevents_pedestal_<<" consecutive events <br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"PED_PROBLEMS\">Pedestal Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its ADC sum is above (pedestal + Nsigma) for  "<<hotclient_checkNevents_<<" consecutive events <br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,AbovePedestalHotCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,AbovePedestalHotCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (hotclient_makeDiagnostics_)
 	{
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
 	  htmlAnyHisto(runNo, d_HEnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
 	  htmlAnyHisto(runNo, d_HFnormped, "(ADC-ped)/width","", 92, htmlFile, htmlDir,1);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (hotclient_makeDiagnostics_)
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Hot cells failing energy tests
   if (hotclient_test_energy_)
     {
-      htmlFile << "<h2><strong><a name=\"ENERGY_PROBLEMS\">Energy Threshold Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit energy is above threshold at any time.<br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"ENERGY_PROBLEMS\">Energy Threshold Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit energy is above threshold at any time.<br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,AboveEnergyThresholdCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,AboveEnergyThresholdCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (hotclient_makeDiagnostics_)
 	{
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
 	  htmlAnyHisto(runNo, d_HErechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
 	  htmlAnyHisto(runNo, d_HFrechitenergy, "Energy (GeV)","", 92, htmlFile, htmlDir,1,1);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (hotclient_makeDiagnostics_)
 
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
   // Hot cells persistently above some threshold energy
   if (hotclient_test_persistent_)
     {
-      htmlFile << "<h2><strong><a name=\"PERSISTENT_PROBLEMS\">Persistent Hot Cell Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit energy is above threshold for "<<hotclient_checkNevents_persistent_<<" consecutive events.<br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"PERSISTENT_PROBLEMS\">Persistent Hot Cell Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit energy is above threshold for "<<hotclient_checkNevents_<<" consecutive events.<br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,AbovePersistentThresholdCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir,0,0);
 	  htmlAnyHisto(runNo,AbovePersistentThresholdCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir,0,0);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
 
   // Hot cells failing neighbor tests
   if (hotclient_test_neighbor_)
     {
-      htmlFile << "<h2><strong><a name=\"NEIGHBOR_PROBLEMS\">Neighbor Energy Test Problems</strong></h2>"<<endl;
-      htmlFile <<"A cell fails this test if its rechit energy is significantly greater than the sum of its surrounding neighbors <br>"<<endl;
-      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<endl;
-      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << endl;
-      htmlFile << "cellpadding=\"10\"> " << endl;
+      htmlFile << "<h2><strong><a name=\"NEIGHBOR_PROBLEMS\">Neighbor Energy Test Problems</strong></h2>"<<std::endl;
+      htmlFile <<"A cell fails this test if its rechit energy is significantly greater than the sum of its surrounding neighbors <br>"<<std::endl;
+      htmlFile <<"<a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top</a><br>"<<std::endl;
+      htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "cellpadding=\"10\"> " << std::endl;
       gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
       for (int i=0;i<3;++i)
 	{
-	  htmlFile << "<tr align=\"left\">" << endl;
+	  htmlFile << "<tr align=\"left\">" << std::endl;
 	  htmlAnyHisto(runNo,AboveNeighborsHotCellsByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo,AboveNeighborsHotCellsByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	}
       if (hotclient_makeDiagnostics_)
 	{
 	  gStyle->SetPalette(1);  // back to rainbow coloring
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HBenergyVsNeighbor, "Cell energy (GeV)","Neighbor energy (GeV)", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo, d_HEenergyVsNeighbor, "Cell energy (GeV)","Neighbor energy (GeV)", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
-	  htmlFile <<"<tr align=\"left\">" <<endl;
+	  htmlFile <<"</tr>"<<std::endl;
+	  htmlFile <<"<tr align=\"left\">" <<std::endl;
 	  htmlAnyHisto(runNo, d_HOenergyVsNeighbor, "Cell energy (GeV)","Neighbor energy (GeV)", 92, htmlFile, htmlDir);
 	  htmlAnyHisto(runNo, d_HFenergyVsNeighbor, "Cell energy (GeV)","Neighbor energy (GeV)", 92, htmlFile, htmlDir);
-	  htmlFile <<"</tr>"<<endl;
+	  htmlFile <<"</tr>"<<std::endl;
 	} // if (hotclient_makeDiagnostics_)
 
-      htmlFile <<"</table>"<<endl;
-      htmlFile <<"<br><hr><br>"<<endl;
+      htmlFile <<"</table>"<<std::endl;
+      htmlFile <<"<br><hr><br>"<<std::endl;
     }
 
 
-  htmlFile <<"<br><hr><br><a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top of Page </a><br>"<<endl;
-  htmlFile <<"<a href = \".\"> Back to Main HCAL DQM Page </a><br>"<<endl;
-  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Hot Cell Status Page </a><br>"<<endl;
+  htmlFile <<"<br><hr><br><a href= \"#EXPERT_HOTCELL_TOP\" > Back to Top of Page </a><br>"<<std::endl;
+  htmlFile <<"<a href = \".\"> Back to Main HCAL DQM Page </a><br>"<<std::endl;
+  htmlFile <<"<a href= \""<<htmlName.c_str()<<"\" > Back to Hot Cell Status Page </a><br>"<<std::endl;
 
-  htmlFile << "</body> " << endl;
-  htmlFile << "</html> " << endl;
+  htmlFile << "</body> " << std::endl;
+  htmlFile << "</html> " << std::endl;
   
   htmlFile.close();
 
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient  HTMLEXPERTOUTPUT ->"<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient  HTMLEXPERTOUTPUT ->"<<cpu_timer.cpuTime()<<std::endl;
     }
   return;
 } // void HcalHotCellClient::htmlExpertOutput(...)
@@ -820,6 +973,12 @@ void HcalHotCellClient::loadHistograms(TFile* infile)
   // Grab individual histograms
   name<<process_.c_str()<<"HotCellMonitor_Hcal/ ProblemHotCells";
   ProblemHotCells = (TH2F*)infile->Get(name.str().c_str());
+  if (ievt_>0 && ProblemHotCells)
+    {
+      ProblemHotCells->Scale(1./ievt_);
+      ProblemHotCells->SetMinimum(0);
+      ProblemHotCells->SetMaximum(1);
+    }
   name.str("");
   
   for (int i=0;i<6;++i)
@@ -827,6 +986,12 @@ void HcalHotCellClient::loadHistograms(TFile* infile)
       // Grab arrays of histograms
       name<<process_.c_str()<<"HotCellMonitor_Hcal/problem_pedestals/"<<subdets_[i]<<" Problem Pedestal Rate";
       ProblemHotCellsByDepth[i] = (TH2F*)infile->Get(name.str().c_str());
+      if (ievt_>0 && ProblemHotCellsByDepth[i])
+	{
+	  ProblemHotCellsByDepth[i]->Scale(1./ievt_);
+	  ProblemHotCellsByDepth[i]->SetMinimum(0);
+	  ProblemHotCellsByDepth[i]->SetMaximum(1);
+	}
       name.str("");
       if (hotclient_test_persistent_)
 	{
@@ -854,9 +1019,68 @@ void HcalHotCellClient::loadHistograms(TFile* infile)
 	}
 
     } //for (int i=0;i<6;++i)
+
+  if (hotclient_makeDiagnostics_)
+    {
+      for (int i=0;i<6;++i)
+	{
+	  name<<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/rechitenergy/Rec hit energy per cell";
+	  d_avgrechitenergymap[i] = (TH2F*)infile->Get(name.str().c_str());
+	  name.str("");
+	  name<<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/rechitenergy/Rec hit occupancy per cell";
+	  d_avgrechitoccupancymap[i] = (TH2F*)infile->Get(name.str().c_str());
+	  name.str("");
+	  /*
+	    // Doing the division here doesn't affect the ME's!
+	  if (d_avgrechitoccupancymap[i]->GetMaximum()>0)
+	    d_avgrechitenergymap[i]->Divide(d_avgrechitoccupancymap[i]);
+	  */
+	}
+      
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HB_normped";
+      d_HBnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HB_rechitenergy";
+      d_HBrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HB_energyVsNeighbor";
+      d_HBenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HE_normped";
+      d_HEnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HE_rechitenergy";
+      d_HErechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HE_energyVsNeighbor";
+      d_HEenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HO_normped";
+      d_HOnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HO_rechitenergy";
+      d_HOrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HO_energyVsNeighbor";
+      d_HOenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HF_normped";
+      d_HFnormped = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HF_rechitenergy";
+      d_HFrechitenergy = (TH1F*)infile->Get(name.str().c_str());
+      name.str("");
+      name <<process_.c_str()<<"HotCellMonitor_Hcal/diagnostics/pedestal/HF_energyVsNeighbor";
+      d_HFenergyVsNeighbor = (TH2F*)infile->Get(name.str().c_str());
+      name.str("");
+    } // if (hotclient_makeDiagnostics_)
+
+
+
+
   if (showTiming_)
     {
-      cpu_timer.stop();  cout <<"TIMER:: HcalHotCellClient LOAD HISTOGRAMS -> "<<cpu_timer.cpuTime()<<endl;
+      cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient LOAD HISTOGRAMS -> "<<cpu_timer.cpuTime()<<std::endl;
     }
 
   return;

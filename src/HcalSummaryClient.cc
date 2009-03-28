@@ -10,37 +10,6 @@ using namespace edm;
 using namespace std;
 
 
-// Don't know why the !@%!@% I can't put this in a separate file
-//without getting a bunch of compiler link errors
-/*
-SubTaskSummaryStatus::SubTaskSummaryStatus(bool onoffval)
-{
-  onoff=onoffval;
-  for (unsigned int i=0;i<4;++i)
-    {
-      status[i]=-1;  //initial status is unknown
-      problemName="";
-      problemDir="";
-    }	   
-} // constructor
-
-SubTaskSummaryStatus::~SubTaskSummaryStatus(){}
-
-
-void SubTaskSummaryStatus::SetOnOff(bool onoffval)
-{
-  onoff=onoffval;
-  return;
-} // SetOnOff(bool onoffval)
-
-
-bool SubTaskSummaryStatus::IsOn()
-{
-  return onoff;
-} // IsOn()
-
-*/
-
 
 HcalSummaryClient::HcalSummaryClient() {} //constructor
 
@@ -63,7 +32,7 @@ void HcalSummaryClient::init(const ParameterSet& ps, DQMStore* dbe, string clien
 
   // Find out which subtasks are being run
   // At the moment, only hot/dead/pedestal comply with correct format of histograms; ignore all others
-  //dataFormatMon_.onoff=(ps.getUntrackedParameter<bool>("DataFormatClient",false));
+  dataFormatMon_.onoff=(ps.getUntrackedParameter<bool>("DataFormatClient",false));
   digiMon_.onoff=(ps.getUntrackedParameter<bool>("DigiClient",false));
   recHitMon_.onoff=(ps.getUntrackedParameter<bool>("RecHitClient",false));
   pedestalMon_.onoff=(ps.getUntrackedParameter<bool>("PedestalClient",false));
@@ -75,9 +44,9 @@ void HcalSummaryClient::init(const ParameterSet& ps, DQMStore* dbe, string clien
   //caloTowerMon_.onoff=(ps.getUntrackedParameter<bool>("CaloTowerClient",false));
 
   // Set histogram problem names & directories  for each subtask
-  dataFormatMon_.problemName  = "";
-  digiMon_.problemName        = "Problem Digi Rate";
-  recHitMon_.problemName      = "Problem RecHit Rate";
+  dataFormatMon_.problemName  = " Hardware Watch Cells";
+  digiMon_.problemName        = " Problem Digi Rate";
+  recHitMon_.problemName      = " Problem RecHit Rate";
   pedestalMon_.problemName    = " Problem Pedestal Rate";
   ledMon_.problemName         = "";
   hotCellMon_.problemName     = " Problem Hot Cell Rate";
@@ -85,9 +54,9 @@ void HcalSummaryClient::init(const ParameterSet& ps, DQMStore* dbe, string clien
   trigPrimMon_.problemName    = "";
   caloTowerMon_.problemName   = "";
 
-  dataFormatMon_.problemDir   = "";
+  dataFormatMon_.problemDir   = "DataFormatMonitor";
   digiMon_.problemDir         = "DigiMonitor_Hcal/problem_digis";
-  recHitMon_.problemDir       = "";
+  recHitMon_.problemDir       = "RecHitMonitor_Hcal/problem_rechits";
   pedestalMon_.problemDir     = "PedestalMonitor_Hcal/problem_pedestals";
   ledMon_.problemDir          = "";
   hotCellMon_.problemDir      = "HotCellMonitor_Hcal/problem_hotcells";
@@ -95,6 +64,17 @@ void HcalSummaryClient::init(const ParameterSet& ps, DQMStore* dbe, string clien
   trigPrimMon_.problemDir     = "";
   caloTowerMon_.problemDir    = "";
   
+  dataFormatMon_.ievtName   = "DataFormatMonitor/Data Format Task Event Number";
+  digiMon_.ievtName         = "DigiMonitor_Hcal/Digi Task Event Number";
+  recHitMon_.ievtName       = "RecHitMonitor_Hcal/RecHit Task Event Number";
+  pedestalMon_.ievtName     = "PedestalMonitor_Hcal/Pedestal Task Event Number";
+  ledMon_.ievtName          = "";
+  hotCellMon_.ievtName      = "HotCellMonitor_Hcal/Hot Cell Task Event Number";
+  deadCellMon_.ievtName     = "DeadCellMonitor_Hcal/Dead Cell Task Event Number";
+  trigPrimMon_.ievtName     = "";
+  caloTowerMon_.ievtName    = "";
+
+
   // All initial status floats set to -1 (unknown)
   status_HB_=-1;
   status_HE_=-1;
@@ -165,17 +145,19 @@ void HcalSummaryClient::beginRun(void)
 void HcalSummaryClient::endJob(void)
 {
   if ( debug_>0 ) cout << "<HcalSummaryClient: endJob> ievt = " << ievt_ << endl;
-  // When the job ends, we want to make a summary before exiting
-  if (ievt_>lastupdate_)
-    analyze();
+  // When the job ends, do we want to make a summary before exiting?
+  // Or does this interfere with normalization of histograms?
+  //if (ievt_>lastupdate_)
+  //  analyze();
   this->cleanup();
 } // void HcalSummaryClient::endJob(void)
 
 void HcalSummaryClient::endRun(void) 
 {
   if ( debug_ ) cout << "<HcalSummaryClient: endRun> jevt = " << jevt_ << endl;
-  // When the run ends, we want to make a summary before exiting
-  analyze();
+  // When the run ends, do we want to make a summary before exiting?
+  // Or does this interfere with normalization of histograms?
+  //analyze();
   lastupdate_=ievt_;
   this->cleanup();
 } // void HcalSummaryClient::endRun(void) 
@@ -221,8 +203,7 @@ void HcalSummaryClient::setup(void)
   for (int ieta=1;ieta<=etaBins_;++ieta)
     for (int iphi=1; iphi<=phiBins_;++iphi)
       me->setBinContent(ieta,iphi,-1);
-  me->setAxisRange(-1,1,3);
-
+  
   // Make new simplified status histogram
   histo.str("");
   histo<<"reportSummaryMap";
@@ -231,8 +212,6 @@ void HcalSummaryClient::setup(void)
     dqmStore_->removeElement(me->getName());
   me = dqmStore_->book2D(histo.str().c_str(), histo.str().c_str(), 
 			 5,0,5,1,0,1);
-  me->setAxisRange(-1,1,3);
-
   TH2F* myhist=me->getTH2F();
   myhist->GetXaxis()->SetBinLabel(1,"HB");
   myhist->GetXaxis()->SetBinLabel(2,"HE");
@@ -244,6 +223,32 @@ void HcalSummaryClient::setup(void)
   myhist->SetBinContent(5,1,-1); // no ZDC info known
   myhist->SetOption("textcolz");
   //myhist->SetOptStat(0);
+
+  // Set initial counters to -1 (unknown)
+  status_global_=-1; 
+  status_HB_=-1; 
+  status_HE_=-1; 
+  status_HO_=-1; 
+  status_HF_=-1; 
+  status_ZDC_=-1;
+
+  MonitorElement* advancedMap = dqmStore_->get(prefixME_ + "/EventInfo/advancedReportSummaryMap");
+  // Set all bins to "unknown" to start
+
+  if (advancedMap)
+    {
+      for (int ieta=1;ieta<=etaBins_;++ieta)
+	for (int iphi=1; iphi<=phiBins_;++iphi)
+	  advancedMap->setBinContent(ieta,iphi,-1);
+    }
+  MonitorElement* reportMap = dqmStore_->get(prefixME_ + "/EventInfo/reportSummaryMap");
+  if (!reportMap)
+    {
+      cout <<"<HcalSummaryClient::setup> Could not get reportSummaryMap!"<<endl;
+      return;
+    }
+  for (int i=1;i<=5;++i)
+    reportMap->setBinContent(i,1,-1);
 
   return;
       
@@ -287,23 +292,20 @@ void HcalSummaryClient::analyze(void)
   MonitorElement* simpleMap = dqmStore_->get(prefixME_ + "/EventInfo/reportSummaryMap");
   if (!simpleMap)
     {
-      cout <<"<HcalSummaryClient::analyze> Could not get advancedReportSummaryMap!"<<endl;
+      cout <<"<HcalSummaryClient::analyze> Could not get reportSummaryMap!"<<endl;
       return;
     }
   for (int ix=1;ix<=5;++ix)
     simpleMap->setBinContent(ix,1,-1);
-  simpleMap->setAxisRange(-1,1,3);
 
   MonitorElement* reportMap = dqmStore_->get(prefixME_ + "/EventInfo/advancedReportSummaryMap");
   // Set all bins to "unknown" to start
   for (int ieta=1;ieta<=etaBins_;++ieta)
     for (int iphi=1; iphi<=phiBins_;++iphi)
       reportMap->setBinContent(ieta,iphi,-1);
-  reportMap->setAxisRange(-1,1,3);
-
-  // Set values to 'unknown' status; they'll be set by analyze_everything routines 
 
 
+  // Start with counters in 'unknown' status; they'll be set by analyze_everything routines 
   status_global_=-1; 
   status_HB_=-1; 
   status_HE_=-1; 
@@ -524,6 +526,7 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
   double ZDCstatus=-1; // not yet implemented
   double ALLstatus=0;
 
+
   double etamin, etamax, phimin, phimax;
   int etabins, phibins;
   int eta, phi;
@@ -534,16 +537,34 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
   TH2F* hist;
   MonitorElement* reportMap = dqmStore_->get(prefixME_ + "/EventInfo/advancedReportSummaryMap");
 
+  int ievtTask=-1;
+  name.str("");
+  name <<prefixME_<<"/"<<s.ievtName;
+  me = dbe_->get(name.str().c_str());
+  name.str("");
+  if (me)
+    {
+      string s = me->valueString();
+      sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievtTask);
+      if ( debug_>0 ) cout << "Found '" << name.str().c_str() << "'" << endl;
+    }
+
   // Layer 1 HB& HF
   if (HBpresent_ || HFpresent_)
     {
       name.str("");
       name <<prefixME_<<"/"<<s.problemDir<<"/"<<"HB HF Depth 1 "<<s.problemName;
       me=dqmStore_->get(name.str().c_str());
-      
+      name.str("");
+      if (!me && debug_>0)  cout <<"<HcalSummaryClient::analyze_subtask> CAN'T FIND HISTOGRAM WITH NAME:  "<<name.str().c_str()<<endl;
       if (me)
 	{
 	  hist=me->getTH2F();
+
+	  if (ievtTask>0)
+	    {
+	      hist->Scale(1./ievtTask);
+	    }
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -586,6 +607,9 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if (me)
 	{
 	  hist=me->getTH2F();
+	  if (ievtTask>0)	  
+	    hist->Scale(1./ievtTask);
+
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -628,6 +652,8 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if (me)
 	{
 	  hist=me->getTH2F();
+	  if (ievtTask>0)
+	    hist->Scale(1./ievtTask);
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -668,6 +694,8 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if (me)
 	{
 	  hist=me->getTH2F();
+	  if (ievtTask>0)
+	    hist->Scale(1./ievtTask);
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -703,6 +731,8 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if (me)
 	{
 	  hist=me->getTH2F();
+	  if (ievtTask>0)
+	    hist->Scale(1./ievtTask);
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -737,6 +767,8 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if (me)
 	{
 	  hist=me->getTH2F();
+	  if (ievtTask>0)
+	    hist->Scale(1./ievtTask);
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
@@ -834,11 +866,12 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
   if (debug_>0)
     {
       cout <<s.problemDir<<endl;
-      cout <<"HB = "<<HBstatus<<endl;
-      cout <<"HE = "<<HEstatus<<endl;
-      cout <<"HO = "<<HOstatus<<endl;
-      cout <<"HF = "<<HFstatus<<endl;
-      cout <<"TOTAL = "<<s.ALLstatus<<endl;
+      cout <<"ReportSummary:  HB = "<<HBstatus<<endl;
+      cout <<"ReportSummary: HE = "<<HEstatus<<endl;
+      cout <<"ReportSummary: HO = "<<HOstatus<<endl;
+      cout <<"ReportSummary: HF = "<<HFstatus<<endl;
+      cout <<"ReportSummary: TOTAL = "<<s.ALLstatus<<endl;
+      cout <<"Avg # of bad cells: "<<endl;
       cout <<"sumHB = "<<status_HB_<<endl;
       cout <<"sumHE = "<<status_HE_<<endl;
       cout <<"sumHO = "<<status_HO_<<endl;
