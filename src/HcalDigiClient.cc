@@ -17,7 +17,7 @@ void HcalDigiClient::init(const ParameterSet& ps, DQMStore* dbe, string clientNa
     }
 
   if (debug_>0)
-    cout <<"<HcalDigiClient> init(const ParameterSet& ps, QMStore* dbe, string clientName)"<<std::endl;
+    std::cout <<"<HcalDigiClient> init(const ParameterSet& ps, QMStore* dbe, string clientName)"<<std::endl;
 
   //errorFrac_=ps.getUntrackedParameter<double>("digiErrorFrac",0.05);
 

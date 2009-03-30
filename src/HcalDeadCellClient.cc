@@ -322,7 +322,7 @@ void HcalDeadCellClient::getHistograms()
     string s = me->valueString();
     ievt_ = -1;
     sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
-    if ( debug_>1 ) cout << "Found '" << name.str().c_str() << "'" << endl;
+    if ( debug_>1 ) std::cout << "Found '" << name.str().c_str() << "'" << std::endl;
   }
 
 
@@ -368,7 +368,6 @@ void HcalDeadCellClient::getHistograms()
     {
       if (ProblemDeadCells && ievt_>0)
 	{
-	  cout <<"ievt = "<<ievt_<<endl;
 	  ProblemDeadCells->Scale(1./ievt_);
 	  ProblemDeadCells->SetMaximum(1);
 	  ProblemDeadCells->SetMinimum(0);

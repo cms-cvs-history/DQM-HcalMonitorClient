@@ -77,6 +77,10 @@ private:
   TH2F* EnergyThreshByDepth[6];
   TH2F* TimeByDepth[6];
   TH2F* TimeThreshByDepth[6];
+  TH2F* SumEnergyByDepth[6];
+  TH2F* SumEnergyThreshByDepth[6];
+  TH2F* SumTimeByDepth[6];
+  TH2F* SumTimeThreshByDepth[6];
 
   // diagnostic histograms
   TH1F* d_HBEnergy;
