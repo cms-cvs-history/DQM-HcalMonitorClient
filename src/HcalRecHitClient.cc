@@ -19,6 +19,11 @@ void HcalRecHitClient::init(const ParameterSet& ps, DQMStore* dbe,string clientN
 
   // Set histograms to NULL
   ProblemRecHits=0;
+  h_HBEnergy_1D=0;
+  h_HEEnergy_1D=0;
+  h_HOEnergy_1D=0;
+  h_HFEnergy_1D=0;
+
   for (int i=0;i<6;++i)
     {
       // Set each array's pointers to NULL
@@ -143,7 +148,11 @@ void HcalRecHitClient::cleanup(void)
     {
       // delete individual histogram pointers
       if (ProblemRecHits) delete ProblemRecHits;
-      
+      if (h_HBEnergy_1D) delete h_HBEnergy_1D;
+      if (h_HEEnergy_1D) delete h_HEEnergy_1D;
+      if (h_HOEnergy_1D) delete h_HOEnergy_1D;
+      if (h_HFEnergy_1D) delete h_HFEnergy_1D;
+
       for (int i=0;i<6;++i)
 	{
 	  // delete pointers within arrays of histograms
@@ -205,6 +214,10 @@ void HcalRecHitClient::cleanup(void)
 
   // Set individual pointers to NULL
   ProblemRecHits = 0;
+  h_HBEnergy_1D=0;
+  h_HEEnergy_1D=0;
+  h_HOEnergy_1D=0;
+  h_HFEnergy_1D=0;
 
   for (int i=0;i<6;++i)
     {
@@ -309,6 +322,18 @@ void HcalRecHitClient::getHistograms()
   if (ievt_>0)
     ProblemRecHits->Scale(1./ievt_);
 
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HB_energy_1D";
+  h_HBEnergy_1D=getAnyHisto(dummy1D, name.str(),process_, dbe_, debug_, cloneME_);
+  name.str("");
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HE_energy_1D";
+  h_HEEnergy_1D=getAnyHisto(dummy1D, name.str(),process_, dbe_, debug_, cloneME_);
+  name.str("");
+name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HO_energy_1D";
+  h_HOEnergy_1D=getAnyHisto(dummy1D, name.str(),process_, dbe_, debug_, cloneME_);
+  name.str("");
+name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HF_energy_1D";
+  h_HFEnergy_1D=getAnyHisto(dummy1D, name.str(),process_, dbe_, debug_, cloneME_);
+  name.str("");
   getSJ6histos("RecHitMonitor_Hcal/problem_rechits/", " Problem RecHit Rate", ProblemRecHitsByDepth);
   getSJ6histos("RecHitMonitor_Hcal/rechit_info/","Rec Hit Occupancy", OccupancyByDepth);
   getSJ6histos("RecHitMonitor_Hcal/rechit_info_threshold/","Above Threshold Rec Hit Occupancy", OccupancyThreshByDepth);
@@ -983,6 +1008,19 @@ void HcalRecHitClient::loadHistograms(TFile* infile)
   ProblemRecHits = (TH2F*)infile->Get(name.str().c_str());
   name.str("");
   
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HB_energy_1D";
+  h_HBEnergy_1D=(TH1F*)infile->Get(name.str().c_str());
+  name.str("");
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HE_energy_1D";
+  h_HEEnergy_1D=(TH1F*)infile->Get(name.str().c_str());
+  name.str("");
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HO_energy_1D";
+  h_HOEnergy_1D=(TH1F*)infile->Get(name.str().c_str());
+  name.str("");
+  name<<process_.c_str()<<"RecHitMonitor_Hcal/rechit_1D_plots/HF_energy_1D";
+  h_HFEnergy_1D=(TH1F*)infile->Get(name.str().c_str());
+  name.str("");
+
   for (int i=0;i<6;++i)
     {
       // Grab arrays of histograms

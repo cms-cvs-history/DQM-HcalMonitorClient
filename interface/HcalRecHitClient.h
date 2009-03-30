@@ -118,6 +118,12 @@ private:
   TH1F* d_HFThreshTotalEnergy;
   TH1F* d_HFThreshTime;
   TH1F* d_HFThreshOccupancy;
+
+  TH1F* h_HBEnergy_1D;
+  TH1F* h_HEEnergy_1D;
+  TH1F* h_HOEnergy_1D;
+  TH1F* h_HFEnergy_1D;
 };
+
 
 #endif
