@@ -222,7 +222,8 @@ void HcalDeadCellClient::setup(void)
 
 void HcalDeadCellClient::cleanup(void) 
 {
-  if(cloneME_)
+  // leave deletions to framework
+  if(1<0 && cloneME_)
     {
       // delete individual histogram pointers
       if (ProblemDeadCells) delete ProblemDeadCells;
@@ -258,6 +259,7 @@ void HcalDeadCellClient::cleanup(void)
     }
 
   // Set individual pointers to NULL
+  /*
   ProblemDeadCells = 0;
 
   for (int i=0;i<6;++i)
@@ -286,6 +288,7 @@ void HcalDeadCellClient::cleanup(void)
       d_HFrechitenergy=0;
       d_HFenergyVsNeighbor=0;
     } // if (deadclient_makeDiagnostics_)
+  */
 
   dqmReportMapErr_.clear(); 
   dqmReportMapWarn_.clear(); 

@@ -144,7 +144,8 @@ void HcalRecHitClient::setup(void)
 
 void HcalRecHitClient::cleanup(void) 
 {
-  if(cloneME_)
+  // leave deletions to framework
+  if(1<0 && cloneME_)
     {
       // delete individual histogram pointers
       if (ProblemRecHits) delete ProblemRecHits;
@@ -212,6 +213,7 @@ void HcalRecHitClient::cleanup(void)
       
     } // if (cloneME_)
 
+  /*
   // Set individual pointers to NULL
   ProblemRecHits = 0;
   h_HBEnergy_1D=0;
@@ -272,6 +274,7 @@ void HcalRecHitClient::cleanup(void)
       d_HFThreshTime              =0;
       d_HFThreshOccupancy         =0;
     } // if (rechitclient_makeDiagnostics_)
+  */
 
   dqmReportMapErr_.clear(); 
   dqmReportMapWarn_.clear(); 
