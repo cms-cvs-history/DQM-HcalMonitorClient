@@ -549,6 +549,17 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
       if ( debug_>0 ) std::cout << "Found '" << name.str().c_str() << "'" << std::endl;
     }
 
+  // Scale overall problem plot
+  name.str("");
+  name << prefixME_<<"/"<<s.problemName<<" for all HCAL";
+  me=dqmStore_->get(name.str().c_str());
+  if (me)
+    {
+      hist=me->getTH2F();
+      double counter=hist->GetBinContent(0,0);
+      if (counter>0) hist->Scale(1./counter);
+    }
+
   // Layer 1 HB& HF
   if (HBpresent_ || HFpresent_)
     {
@@ -561,10 +572,9 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 	{
 	  hist=me->getTH2F();
 
-	  if (ievtTask>0)
-	    {
-	      hist->Scale(1./ievtTask);
-	    }
+	  //if (ievtTask>0)	      hist->Scale(1./ievtTask);
+	  double counter=hist->GetBinContent(0,0);
+	  if (counter>0) hist->Scale(1./counter);
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();

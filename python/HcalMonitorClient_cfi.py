@@ -45,11 +45,9 @@ hcalClient = cms.EDFilter("HcalMonitorClient",
 
                           # Dead Cell Client
                           DeadCellClient                                = cms.untracked.bool(True),
+                          DeadCellClient_test_neverpresent              = cms.untracked.bool(True),
                           DeadCellClient_test_occupancy                 = cms.untracked.bool(True),
-                          DeadCellClient_test_rechit_occupancy          = cms.untracked.bool(True),
-                          DeadCellClient_test_pedestal                  = cms.untracked.bool(True),
                           DeadCellClient_test_energy                    = cms.untracked.bool(True),
-                          DeadCellClient_test_neighbor                  = cms.untracked.bool(False),
                           DeadCellClient_checkNevents                   = cms.untracked.int32(100),
                           DeadCellClient_minErrorFlag                   = cms.untracked.double(0.05),
                           DeadCellClient_makeDiagnosticPlots            = cms.untracked.bool(False),
