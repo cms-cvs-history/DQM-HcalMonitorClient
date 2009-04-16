@@ -114,10 +114,9 @@ def setHcalClientValuesFromMonitor(client, origmonitor, debug=False):
     
     # Dead Cell
     client.DeadCellClient                         = monitor.DeadCellMonitor
+    client.DeadCellClient_test_neverpresent       = monitor.DeadCellMonitor_test_neverpresent
     client.DeadCellClient_test_occupancy          = monitor.DeadCellMonitor_test_occupancy
-    client.DeadCellClient_test_pedestal           = monitor.DeadCellMonitor_test_pedestal
     client.DeadCellClient_test_energy             = monitor.DeadCellMonitor_test_energy
-    client.DeadCellClient_test_neighbor           = monitor.DeadCellMonitor_test_neighbor
     #client.DeadCellClient_minErrorFlag           = monitor.DeadCellMonitor_minErrorFlag # want to keep these separate?
     client.DeadCellClient_makeDiagnosticPlots     = monitor.DeadCellMonitor_makeDiagnosticPlots          
 
