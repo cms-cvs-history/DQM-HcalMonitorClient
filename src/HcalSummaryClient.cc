@@ -44,6 +44,16 @@ void HcalSummaryClient::init(const ParameterSet& ps, DQMStore* dbe, string clien
   //caloTowerMon_.onoff=(ps.getUntrackedParameter<bool>("CaloTowerClient",false));
 
   // Set histogram problem names & directories  for each subtask
+  dataFormatMon_.baseProblemName  = "DataFormatMonitor/ HardwareWatchCells"; // untested
+  digiMon_.baseProblemName        = "DigiMonitor_Hcal/ ProblemDigis";
+  recHitMon_.baseProblemName      = "RecHitMonitor_Hcal/ ProblemRecHits";
+  pedestalMon_.baseProblemName    = "PedestalMonitor_Hcal/ ProblemPedestals";
+  ledMon_.baseProblemName         = "";
+  hotCellMon_.baseProblemName     = "HotCellMonitor_Hcal/ ProblemHotCells";
+  deadCellMon_.baseProblemName    = "DeadCellMonitor_Hcal/ ProblemDeadCells";
+  trigPrimMon_.baseProblemName    = "";
+  caloTowerMon_.baseProblemName   = "";
+
   dataFormatMon_.problemName  = " Hardware Watch Cells";
   digiMon_.problemName        = " Problem Digi Rate";
   recHitMon_.problemName      = " Problem RecHit Rate";
@@ -551,14 +561,22 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 
   // Scale overall problem plot
   name.str("");
-  name << prefixME_<<"/"<<s.problemName<<" for all HCAL";
+  name << prefixME_<<"/"<<s.baseProblemName;
   me=dqmStore_->get(name.str().c_str());
+
   if (me)
     {
       hist=me->getTH2F();
       double counter=hist->GetBinContent(0,0);
-      if (counter>0) hist->Scale(1./counter);
+      if (counter>0) 
+	{
+	  hist->Scale(1./counter);
+	  // scale to 0-1 to always maintain consistent coloration
+	  hist->SetMaximum(1.);
+	  hist->SetMinimum(0.);  // change to some threshold value?
+	}
     }
+
 
   // Layer 1 HB& HF
   if (HBpresent_ || HFpresent_)
@@ -574,7 +592,13 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 
 	  //if (ievtTask>0)	      hist->Scale(1./ievtTask);
 	  double counter=hist->GetBinContent(0,0);
-	  if (counter>0) hist->Scale(1./counter);
+	  if (counter>0) 
+	    {
+	      hist->Scale(1./counter);
+	      // scale to 0-1 to always maintain consistent coloration
+	      hist->SetMaximum(1.);
+	      hist->SetMinimum(0.);  // change to some threshold value?
+	    }
 	  etabins=hist->GetNbinsX();
 	  phibins=hist->GetNbinsY();
 	  etamin=hist->GetXaxis()->GetXmin();
