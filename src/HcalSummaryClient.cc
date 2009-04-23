@@ -186,8 +186,8 @@ void HcalSummaryClient::setup(void)
   me->Fill(-1); // set status to unknown at startup
   histo.str("");
 
-  std::string subdets[4] = {"HB","HE","HO","HF"};
-  for (unsigned int i=0;i<4;++i)
+  std::string subdets[5] = {"HB","HE","HO","HF","ZDC"};
+  for (unsigned int i=0;i<5;++i)
     {
       // Create floats showing subtasks status
       dqmStore_->setCurrentFolder( prefixME_ + "/EventInfo/reportSummaryContents" );  histo<<"Hcal_"<<subdets[i].c_str();
