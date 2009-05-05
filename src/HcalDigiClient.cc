@@ -363,8 +363,8 @@ void HcalDigiClient::analyze(void){
   if ( updates % 10 == 0 ) {
     if ( debug_ ) std::cout << "HcalDigiClient: " << updates << " updates" << std::endl;
   }
-  report();
-  getHistograms();
+  //report();
+  //getHistograms();
   if (showTiming_)
     {
       cpu_timer.stop();  std::cout <<"TIMER:: HcalDigiClient ANALYZE  -> "<<cpu_timer.cpuTime()<<std::endl;
@@ -1493,7 +1493,7 @@ void HcalDigiClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   
   if (debug_>0) std::cout << "<HcalDigiClient::htmlOutput> Preparing html output ..." << std::endl;
 
-  getHistograms();
+  //getHistograms();
 
   string client = "DigiMonitor";
   htmlErrors(runNo,htmlDir,client,process_,dbe_,dqmReportMapErr_,dqmReportMapWarn_,dqmReportMapOther_);

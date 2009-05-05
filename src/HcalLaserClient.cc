@@ -62,7 +62,7 @@ void HcalLaserClient::beginRun(void){
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 void HcalLaserClient::analyze(void) {  
   jevt_++;
-  getHistograms();
+  //getHistograms();
 }
 
 //-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=

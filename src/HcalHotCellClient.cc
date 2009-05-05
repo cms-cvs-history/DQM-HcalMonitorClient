@@ -524,7 +524,7 @@ void HcalHotCellClient::analyze(void)
     {
       if ( debug_>1 ) std::cout << "<HcalHotCellClient::analyze>  Running analyze "<<std::endl;
     }
-  getHistograms(); 
+  //getHistograms(); 
   if (showTiming_)
     {
       cpu_timer.stop();  std::cout <<"TIMER:: HcalHotCellClient ANALYZE -> "<<cpu_timer.cpuTime()<<std::endl;
@@ -617,7 +617,7 @@ void HcalHotCellClient::resetAllME()
 
 void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
 {
-  getHistograms();
+  //getHistograms();
   if (showTiming_)
     {
       cpu_timer.reset(); cpu_timer.start();

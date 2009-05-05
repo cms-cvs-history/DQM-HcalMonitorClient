@@ -479,7 +479,7 @@ void HcalBeamClient::analyze(void)
     {
       if ( debug_>1 ) cout << "<HcalBeamClient::analyze>  Running analyze "<<endl;
     }
-  getHistograms();
+  //getHistograms();
   return;
 } // void HcalBeamClient::analyze(void)
 
