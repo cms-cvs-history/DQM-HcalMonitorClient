@@ -681,7 +681,7 @@ void HcalBeamClient::htmlOutput(int runNo, string htmlDir, string htmlName)
     }
 
   if (debug_>1) cout << "Preparing HcalBeamClient html output ..." << endl;
-
+  getHistograms();
   string client = "BeamMonitor";
 
   ofstream htmlFile;

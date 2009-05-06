@@ -330,7 +330,7 @@ void HcalDigiClient::report(){
       cpu_timer.reset(); cpu_timer.start();
     }
   if ( debug_ ) std::cout << "HcalDigiClient: report" << std::endl;
-  
+  getHistograms();
   ostringstream name;
   name<<process_.c_str()<<"Hcal/DigiMonitor_Hcal/Digi Task Event Number";
   MonitorElement* me = 0;
@@ -1493,7 +1493,7 @@ void HcalDigiClient::htmlOutput(int runNo, string htmlDir, string htmlName)
   
   if (debug_>0) std::cout << "<HcalDigiClient::htmlOutput> Preparing html output ..." << std::endl;
 
-  //getHistograms();
+  getHistograms();
 
   string client = "DigiMonitor";
   htmlErrors(runNo,htmlDir,client,process_,dbe_,dqmReportMapErr_,dqmReportMapWarn_,dqmReportMapOther_);

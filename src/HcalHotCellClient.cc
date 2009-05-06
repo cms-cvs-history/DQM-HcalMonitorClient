@@ -617,14 +617,13 @@ void HcalHotCellClient::resetAllME()
 
 void HcalHotCellClient::htmlOutput(int runNo, string htmlDir, string htmlName)
 {
-  //getHistograms();
   if (showTiming_)
     {
       cpu_timer.reset(); cpu_timer.start();
     }
 
   if (debug_>1) std::cout << "Preparing HcalHotCellClient html output ..." << std::endl;
-
+  getHistograms();
   string client = "HotCellMonitor";
 
   ofstream htmlFile;
