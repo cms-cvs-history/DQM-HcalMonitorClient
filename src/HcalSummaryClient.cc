@@ -740,13 +740,13 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 	    {
 	      for (int iphi=1; iphi<=phibins;++iphi)
 		{
+		  eta=ieta+int(etamin)-1;
 		  phi=iphi+int(phimin)-1;
-		  if (phi%2==0) continue; // skip non-physical phi bins
+		  if (abs(eta)>20 && phi%2==0) continue; // skip non-physical phi bins
 
 		  bincontent=hist->GetBinContent(ieta,iphi);
 		  if (bincontent>0)
 		    {
-		      eta=ieta+int(etamin)-1;
 		      reportMap->Fill(eta,phi,bincontent);
 		      HEstatus+=bincontent;
 		    } // if (bincontent>0)
@@ -778,11 +778,11 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 	      for (int iphi=1; iphi<=phibins;++iphi)
 		{
 		  phi=iphi+int(phimin)-1;
-		  if (phi%2==0) continue; // skip non-physical phi bins
+		  eta=ieta+int(etamin)-1;
+		  if (abs(eta)>20 && phi%2==0) continue; // skip non-physical phi bins
 		  bincontent=hist->GetBinContent(ieta,iphi);
 		  if (bincontent>0)
 		    {
-		      eta=ieta+int(etamin)-1;
 		      reportMap->Fill(eta,phi,bincontent); 
 		      HEstatus+=bincontent;
 		    } // if (bincontent>0)
@@ -814,12 +814,11 @@ void HcalSummaryClient::analyze_subtask(SubTaskSummaryStatus &s)
 	      for (int iphi=1; iphi<=phibins;++iphi)
 		{
 		  phi=iphi+int(phimin)-1;
-		  if (phi%2==0) continue; // skip non-physical phi bins
+		  eta=ieta+int(etamin)-1;
+		  if (abs(eta)>20 && phi%2==0) continue; // skip non-physical phi bins
 		  bincontent=hist->GetBinContent(ieta,iphi);
 		  if (bincontent>0)
 		    {
-		      eta=ieta+int(etamin)-1;
-		      phi=iphi+int(phimin)-1;
 		      reportMap->Fill(eta,phi,bincontent);
 		      HEstatus+=bincontent;
 		    } // if (bincontent>0)
