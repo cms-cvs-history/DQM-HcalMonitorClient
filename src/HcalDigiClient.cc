@@ -73,7 +73,7 @@ void HcalDigiClient::init(const ParameterSet& ps, DQMStore* dbe, string clientNa
   DigiErrorEtaPhi    =0;
   DigiErrorVME    =0;
   DigiErrorSpigot    =0;
-  for (int i=0;i<6;++i)
+  for (int i=0;i<4;++i)
     {
       ProblemDigisByDepth[i]    =0;
       DigiErrorsBadCapID[i]    =0;
@@ -82,7 +82,7 @@ void HcalDigiClient::init(const ParameterSet& ps, DQMStore* dbe, string clientNa
       //DigiErrorsNoDigi[i]    =0;
       DigiErrorsDVErr[i]    =0;
       DigiOccupancyByDepth[i]    =0;
-    } // for (int i=0;i<6;++i)
+    } // for (int i=0;i<4;++i)
 
   for (int i=0;i<9;++i)
     {
@@ -96,12 +96,10 @@ void HcalDigiClient::init(const ParameterSet& ps, DQMStore* dbe, string clientNa
       hfHists.TS_sum_minus[i]=0;
     }
 
-  subdets_.push_back("HB HF Depth 1 ");
-  subdets_.push_back("HB HF Depth 2 ");
+  subdets_.push_back("HB HE HF Depth 1 ");
+  subdets_.push_back("HB HE HF Depth 2 ");
   subdets_.push_back("HE Depth 3 ");
-  subdets_.push_back("HO ZDC ");
-  subdets_.push_back("HE Depth 1 ");
-  subdets_.push_back("HE Depth 2 ");
+  subdets_.push_back("HO Depth 4 ");
 
   if (showTiming_)
     {
@@ -217,7 +215,7 @@ void HcalDigiClient::cleanup(void)
       if (DigiErrorEtaPhi) delete DigiErrorEtaPhi;
       if (DigiErrorVME) delete DigiErrorVME;
       if (DigiErrorSpigot) delete DigiErrorSpigot;
-      for (int i=0;i<6;++i)
+      for (int i=0;i<4;++i)
 	{
 	  if (ProblemDigisByDepth[i]) delete ProblemDigisByDepth[i];
 	  if (DigiErrorsBadCapID[i]) delete DigiErrorsBadCapID[i];
@@ -226,7 +224,7 @@ void HcalDigiClient::cleanup(void)
 	  //if (DigiErrorsNoDigi[i]) delete DigiErrorsNoDigi[i];
 	  if (DigiErrorsDVErr[i]) delete DigiErrorsDVErr[i];
 	  if (DigiOccupancyByDepth[i]) delete DigiOccupancyByDepth[i];
-	} // for (int i=0;i<6;++i)
+	} // for (int i=0;i<4;++i)
       for (int i=0;i<9;++i)
 	{
 	  if (hbHists.TS_sum_plus[i])  delete hbHists.TS_sum_plus[i];
@@ -294,7 +292,7 @@ void HcalDigiClient::cleanup(void)
   DigiErrorEtaPhi    =0;
   DigiErrorVME    =0;
   DigiErrorSpigot    =0;
-  for (int i=0;i<6;++i)
+  for (int i=0;i<4;++i)
     {
       ProblemDigisByDepth[i]    =0;
       DigiErrorsBadCapID[i]    =0;
@@ -303,7 +301,7 @@ void HcalDigiClient::cleanup(void)
       //DigiErrorsNoDigi[i]    =0;
       DigiErrorsDVErr[i]    =0;
       DigiOccupancyByDepth[i]    =0;
-    } // for (int i=0;i<6;++i)
+    } // for (int i=0;i<4;++i)
   for (int i=0;i<9;++i)
    {
       hbHists.TS_sum_plus[i]=0;
@@ -584,17 +582,17 @@ void HcalDigiClient::getHistograms(){
       name.str("");
     } // for (int i=0;i<9;++i)
 
-  getSJ6histos("DigiMonitor_Hcal/digi_occupancy/"," Digi Eta-Phi Occupancy Map",DigiOccupancyByDepth);
-  getSJ6histos("DigiMonitor_Hcal/problem_digis/"," Problem Digi Rate",ProblemDigisByDepth);
-  for (int i=0;i<6;++i)
+  getEtaPhiHists("DigiMonitor_Hcal/digi_occupancy/"," Digi Eta-Phi Occupancy Map",DigiOccupancyByDepth);
+  getEtaPhiHists("DigiMonitor_Hcal/problem_digis/"," Problem Digi Rate",ProblemDigisByDepth);
+  for (int i=0;i<4;++i)
     {
       ProblemDigisByDepth[i]->Scale(1./ievt_);
     }
-  getSJ6histos("DigiMonitor_Hcal/problem_digis/badcapID/"," Digis with Bad Cap ID Rotation",DigiErrorsBadCapID);
-  getSJ6histos("DigiMonitor_Hcal/problem_digis/baddigisize/"," Digis with Bad Size",DigiErrorsBadDigiSize);
-  getSJ6histos("DigiMonitor_Hcal/problem_digis/badADCsum/"," Digis with ADC sum below threshold ADC counts",DigiErrorsBadADCSum);
-  //getSJ6histos("DigiMonitor_Hcal/problem_digis/nodigis/"," Digis Missing for a Number of Consecutive Events",DigiErrorsNoDigi);
-  getSJ6histos("DigiMonitor_Hcal/problem_digis/data_invalid_error/"," Digis with Data Invalid or Error Bit Set",DigiErrorsDVErr);
+  getEtaPhiHists("DigiMonitor_Hcal/problem_digis/badcapID/"," Digis with Bad Cap ID Rotation",DigiErrorsBadCapID);
+  getEtaPhiHists("DigiMonitor_Hcal/problem_digis/baddigisize/"," Digis with Bad Size",DigiErrorsBadDigiSize);
+  getEtaPhiHists("DigiMonitor_Hcal/problem_digis/badADCsum/"," Digis with ADC sum below threshold ADC counts",DigiErrorsBadADCSum);
+  //getEtaPhiHists("DigiMonitor_Hcal/problem_digis/nodigis/"," Digis Missing for a Number of Consecutive Events",DigiErrorsNoDigi);
+  getEtaPhiHists("DigiMonitor_Hcal/problem_digis/data_invalid_error/"," Digis with Data Invalid or Error Bit Set",DigiErrorsDVErr);
   if (showTiming_)
     {
       cpu_timer.stop();  std::cout <<"TIMER:: HcalDigiClient GET HISTOGRAMS  -> "<<cpu_timer.cpuTime()<<std::endl;
@@ -804,7 +802,7 @@ void HcalDigiClient::resetAllME()
       name.str("");
     } // for (int i=0;i<9;++i)
 
-  for (int i=0;i<6;++i)
+  for (int i=0;i<4;++i)
     {
       name<<process_.c_str()<<"DigiMonitor_Hcal/problem_digis/"<<subdets_[i]<<" Problem Digi Rate";
       resetME(name.str().c_str(),dbe_);
@@ -826,7 +824,7 @@ void HcalDigiClient::resetAllME()
       name<<process_.c_str()<<"DigiMonitor_Hcal/problem_digis/data_invalid_error/"<<subdets_[i]<<" Digis with Data Invalid or Error Bit Set";
       resetME(name.str().c_str(),dbe_);
       name.str("");
-    } // for (int i=0;i<6;++i)
+    } // for (int i=0;i<4;++i)
   if (showTiming_)
     {
       cpu_timer.stop();  std::cout <<"TIMER:: HcalDigiClient RESET ALL ME  -> "<<cpu_timer.cpuTime()<<std::endl;
@@ -897,14 +895,13 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(20,pcol_error_); // set palette to standard error color scheme
   
-  // Depths are stored as:  0:  HF/HF depth 1, 1:  HF/HF 2, 2:  HE 3, 3:  HO/ZDC, 4: HE 1, 5:  HE2
-  // remap so that HE depths are plotted consecutively
-  int mydepth[6]={0,1,4,5,2,3};
-  for (int i=0;i<3;++i)
+  // Depths are stored as:  0:  HB/HE/HF depth 1, 1:  HB/HE/HF depth 2, 2:  HE depth 3, 3:  HO
+  
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,ProblemDigisByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,ProblemDigisByDepth[mydepth[2*i]+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,ProblemDigisByDepth[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,ProblemDigisByDepth[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
 
@@ -919,11 +916,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiOccupancyByDepth[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiOccupancyByDepth[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiOccupancyByDepth[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiOccupancyByDepth[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -946,11 +943,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiErrorsBadDigiSize[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiErrorsBadDigiSize[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadDigiSize[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadDigiSize[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -969,11 +966,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiErrorsBadCapID[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiErrorsBadCapID[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadCapID[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadCapID[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -985,11 +982,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiErrorsBadADCSum[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiErrorsBadADCSum[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadADCSum[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsBadADCSum[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -1001,11 +998,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiErrorsDVErr[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiErrorsDVErr[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsDVErr[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsDVErr[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -1024,11 +1021,11 @@ void HcalDigiClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName
   htmlFile << "<table border=\"0\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   gStyle->SetPalette(1);
-  for (int i=0;i<3;++i)
+  for (int i=0;i<2;++i)
     {
       htmlFile << "<tr align=\"left\">" << std::endl;
-      htmlAnyHisto(runNo,DigiErrorsNoDigi[mydepth[2*i]],"i#eta","i#phi", 92, htmlFile, htmlDir);
-      htmlAnyHisto(runNo,DigiErrorsNoDigi[mydepth[2*i+1]],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsNoDigi[2*i],"i#eta","i#phi", 92, htmlFile, htmlDir);
+      htmlAnyHisto(runNo,DigiErrorsNoDigi[2*i+1],"i#eta","i#phi", 92, htmlFile, htmlDir);
       htmlFile <<"</tr>"<<std::endl;
     }
   htmlFile <<"</table>"<<std::endl;
@@ -1448,7 +1445,7 @@ void HcalDigiClient::loadHistograms(TFile* infile){
       name.str("");
     } // for (int i=0;i<9;++i)
 
-  for (int i=0;i<6;++i)
+  for (int i=0;i<4;++i)
     {
       name<<process_.c_str()<<"DigiMonitor_Hcal/digi_occupancy/"<<subdets_[i]<<" Digi Eta-Phi Occupancy Map";
       DigiOccupancyByDepth[i] = static_cast<TH2F*>(infile->Get(name.str().c_str()));
@@ -1475,7 +1472,7 @@ void HcalDigiClient::loadHistograms(TFile* infile){
       name<<process_.c_str()<<"DigiMonitor_Hcal/problem_digis/data_invalid_error/"<<subdets_[i]<<" Digis with Data Invalid or Error Bit Set";
       DigiErrorsDVErr[i] = static_cast<TH2F*>(infile->Get(name.str().c_str()));
       name.str("");
-    } // for (int i=0;i<6;++i)
+    } // for (int i=0;i<4;++i)
 
 
   return;
@@ -1562,38 +1559,25 @@ void HcalDigiClient::htmlOutput(int runNo, string htmlDir, string htmlName)
       if (debug_>0) std::cout <<"<HcalDigiClient::htmlOutput>  ERROR: can't find Problem Rec Hit plot!"<<std::endl;
       return;
     }
-  int etabins  = ProblemDigis->GetNbinsX();
-  int phibins  = ProblemDigis->GetNbinsY();
-  float etaMin = ProblemDigis->GetXaxis()->GetXmin();
-  float phiMin = ProblemDigis->GetYaxis()->GetXmin();
 
-  int eta,phi;
+  int ieta,iphi;
 
   ostringstream name;
-  for (int depth=0;depth<6; ++depth)
+  for (int depth=0;depth<4; ++depth)
     {
-      for (int ieta=1;ieta<=etabins;++ieta)
+      for (int eta=0;eta<ProblemDigisByDepth[depth]->GetNbinsX();++eta)
         {
-          for (int iphi=1; iphi<=phibins;++iphi)
+	  ieta=CalcIeta(eta,depth+1);
+          for (int phi=0;phi<ProblemDigisByDepth[depth]->GetNbinsY();++phi)
             {
-              eta=ieta+int(etaMin)-1;
-              phi=iphi+int(phiMin)-1;
+	      iphi=phi+1;
 	      if (abs(eta)>20 && phi%2!=1) continue;
 	      if (abs(eta)>39 && phi%4!=3) continue;
-	      int mydepth=depth+1;
-	      if (mydepth>4) mydepth-=4; // last two depth values are for HE depth 1,2
 	      if (ProblemDigisByDepth[depth]==0)
-		{
 		  continue;
-		}
-	      if (ProblemDigisByDepth[depth]->GetBinContent(ieta,iphi)>0)
+	      if (ProblemDigisByDepth[depth]->GetBinContent(eta+1,phi+1)>0)
 		{
-		  if (depth<2)
-		    (fabs(eta)<29) ? name<<"HB" : name<<"HF";
-		  else if (depth==3)
-		    (fabs(eta)<42) ? name<<"HO" : name<<"ZDC";
-		  else name <<"HE";
-		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<mydepth<<")</td><td align=\"center\">"<<ProblemDigisByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<std::endl;
+		  htmlFile<<"<td>"<<name.str().c_str()<<" ("<<eta<<", "<<phi<<", "<<depth+1<<")</td><td align=\"center\">"<<ProblemDigisByDepth[depth]->GetBinContent(ieta,iphi)*100.<<"</td></tr>"<<std::endl;
 
 		  name.str("");
 		}
@@ -1621,37 +1605,26 @@ void HcalDigiClient::htmlOutput(int runNo, string htmlDir, string htmlName)
 
 
 
+
 bool HcalDigiClient::hasErrors_Temp()
 {
   int problemcount=0;
+  int etabins=0;
+  int phibins=0;
 
-  int etabins  = ProblemDigis->GetNbinsX();
-  int phibins  = ProblemDigis->GetNbinsY();
-  float etaMin = ProblemDigis->GetXaxis()->GetXmin();
-  float phiMin = ProblemDigis->GetYaxis()->GetXmin();
-  int eta,phi;
-
-  for (int depth=0;depth<6; ++depth)
+  for (int depth=0;depth<4; ++depth)
     {
-      for (int ieta=1;ieta<=etabins;++ieta)
+      if (ProblemDigisByDepth[depth]==0) continue;
+      etabins  = ProblemDigisByDepth[depth]->GetNbinsX();
+      phibins  = ProblemDigisByDepth[depth]->GetNbinsY();
+      for (int ieta=0;ieta<etabins;++ieta)
         {
-          for (int iphi=1; iphi<=phibins;++iphi)
+          for (int iphi=0; iphi<phibins;++iphi)
             {
-              eta=ieta+int(etaMin)-1;
-              phi=iphi+int(phiMin)-1;
-	      int mydepth=depth+1;
-	      if (mydepth>4) mydepth-=4; // last two depth values are for HE depth 1,2
-	      if (ProblemDigisByDepth[depth]==0)
-		{
-		  continue;
-		}
-	      if (ProblemDigisByDepth[depth]->GetBinContent(ieta,iphi)>0)
-
-		{
-		  problemcount++;
-		}
-	    } // for (int iphi=1;...)
-	} // for (int ieta=1;...)
+	      if (ProblemDigisByDepth[depth]->GetBinContent(ieta+1,iphi+1)>0)
+		problemcount++;
+	    } // for (int iphi=0;...)
+	} // for (int ieta=0;...)
     } // for (int depth=0;...)
 
   if (problemcount>=100) return true;
@@ -1659,36 +1632,26 @@ bool HcalDigiClient::hasErrors_Temp()
 
 } // bool HcalDigiClient::hasErrors_Temp()
 
+
 bool HcalDigiClient::hasWarnings_Temp()
 {
   int problemcount=0;
+  int etabins=0;
+  int phibins=0;
 
-  int etabins  = ProblemDigis->GetNbinsX();
-  int phibins  = ProblemDigis->GetNbinsY();
-  float etaMin = ProblemDigis->GetXaxis()->GetXmin();
-  float phiMin = ProblemDigis->GetYaxis()->GetXmin();
-  int eta,phi;
- 
-  for (int depth=0;depth<6; ++depth)
+  for (int depth=0;depth<4; ++depth)
     {
-      for (int ieta=1;ieta<=etabins;++ieta)
+      if (ProblemDigisByDepth[depth]==0) continue;
+      etabins  = ProblemDigisByDepth[depth]->GetNbinsX();
+      phibins  = ProblemDigisByDepth[depth]->GetNbinsY();
+      for (int ieta=0;ieta<etabins;++ieta)
         {
-          for (int iphi=1; iphi<=phibins;++iphi)
+          for (int iphi=0; iphi<phibins;++iphi)
             {
-              eta=ieta+int(etaMin)-1;
-              phi=iphi+int(phiMin)-1;
-	      int mydepth=depth+1;
-	      if (mydepth>4) mydepth-=4; // last two depth values are for HE depth 1,2
-	      if (ProblemDigisByDepth[depth]==0)
-		{
-		  continue;
-		}
-	      if (ProblemDigisByDepth[depth]->GetBinContent(ieta,iphi)>0)
-		{
-		  problemcount++;
-		}
-	    } // for (int iphi=1;...)
-	} // for (int ieta=1;...)
+	      if (ProblemDigisByDepth[depth]->GetBinContent(ieta+1,iphi+1)>0)
+		problemcount++;
+	    } // for (int iphi=0;...)
+	} // for (int ieta=0;...)
     } // for (int depth=0;...)
 
   if (problemcount>0) return true;

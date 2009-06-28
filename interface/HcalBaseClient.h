@@ -66,8 +66,15 @@ class HcalBaseClient{
   bool validDetId(HcalSubdetector sd, int ies, int ip, int dp);
   
   void getSJ6histos( char* dir, char* name, TH2F* h[6], char* units="");
-  void getSJ6histos( char* dir, char* name, TH1F* h[6], char* units="");
+  void getSJ6histos( char* dir, char* name, TH1F* h[4], char* units="");
 
+  void getEtaPhiHists( char* dir, char* name, TH2F* h[4], char* units="");
+  int CalcIeta(int hist_eta, int depth);
+  bool isHB(int etabin, int depth);
+  bool isHE(int etabin, int depth);
+  bool isHO(int etabin, int depth);
+  bool isHF(int etabin, int depth);
+ 
  protected:
 
   int ievt_;
@@ -91,6 +98,8 @@ class HcalBaseClient{
   int pcol_error_[20];
   float rgb_error_[20][3];
 
+  static const int binmapd2[];
+  static const int binmapd3[];
 
   // Quality criteria for data integrity
   map<string, vector<QReport*> > dqmReportMapErr_;
