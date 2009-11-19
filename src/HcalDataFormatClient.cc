@@ -127,15 +127,17 @@ void HcalDataFormatClient::analyze(void){
   int spg2offset=0;
   int spg3offset=0;
   int chn2offset=0;
+  float evtcnt=1.0;
   float tsFactor=1.0;
   float val=0.0;
-
-  //Normalize everything by ievt_
+  //Normalize everything by the -1,-1 underflow bin
   for (int fednum=0; fednum<NUMDCCS; fednum++) {
     fed3offset = 1 + (4*fednum); //3 bins, plus one of margin, each DCC
     fed2offset = 1 + (3*fednum); //2 bins, plus one of margin, each DCC
     for (int spgnum=0; spgnum<15; spgnum++) {
       spg3offset = 1 + (4*spgnum); //3 bins, plus one of margin, each spigot
+      //Warning! Assumes interchangable scaling factors among these histograms!
+      evtcnt= LRBDataCorruptionIndicators_->GetBinContent(-1,-1);
       for (int xbin=1; xbin<=3; xbin++) {
 	for (int ybin=1; ybin<=3; ybin++) {
 	  if (!LRBDataCorruptionIndicators_) continue;
@@ -144,34 +146,21 @@ void HcalDataFormatClient::analyze(void){
 	  if (val) 
 	    LRBDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
 							spg3offset+ybin,
-							(float)val);
+							( (float)val/(float)evtcnt ));
 	  if (!HalfHTRDataCorruptionIndicators_) continue;
 	  val = HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
 								spg3offset+ybin);
-	  if (val) {
-	    if ((xbin==3) && (ybin==3)) { //the LW bin for the spigots
-	      if (val>8) { //Special leniency for this bit
-		HalfHTRDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
-								spg3offset+ybin,
-								(float)val-8.0 );
-	      } else {
-		HalfHTRDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
-								spg3offset+ybin,
-								0.0);
-	      }
-	    }
-	    else 
-	      HalfHTRDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
-							      spg3offset+ybin,
-							      (float)val );
-	  }
+	  if (val) 
+	    HalfHTRDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
+							    spg3offset+ybin,
+							    ( (float)val/(float)evtcnt ));
 	  if (!DataFlowInd_ || xbin>2) continue;  //DataFlowInd_;  2x by 3y
 	  val = DataFlowInd_->GetBinContent(fed2offset+xbin,
 					    spg3offset+ybin);
 	  if (val) 
 	    DataFlowInd_->SetBinContent(fed2offset+xbin,
 					spg3offset+ybin,	
-					( (float)val ));
+				( (float)val/(float)evtcnt ));
 	}
       }
     }
@@ -183,6 +172,8 @@ void HcalDataFormatClient::analyze(void){
     fed2offset = 1 + (3*fednum); //2 bins, plus one of margin, each DCC 
     for (int spgnum=0; spgnum<15; spgnum++) {
       spg2offset = 1 + (3*spgnum); //2 bins, plus one of margin, each spigot
+      evtcnt = ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
+  							   spg2offset);
       numTS_[(fednum*NUMSPGS)+spgnum]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
 										   spg2offset+1);
 
@@ -190,7 +181,7 @@ void HcalDataFormatClient::analyze(void){
   	for (int ybin=1; ybin<=2; ybin++) {
   	  val = ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset+xbin,
   							     spg2offset+ybin);
-	  if ( (val) && (ievt_) ) {
+	  if ( (val) && (evtcnt) ) {
 	    //Lower pair of bins don't scale with just the timesamples per event.
 	    if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
 	    else {
@@ -199,12 +190,12 @@ void HcalDataFormatClient::analyze(void){
 	    }
   	    ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset+xbin,
   							 spg2offset+ybin,
-  							 val/(ievt_*tsFactor));
+  							 val/(evtcnt*tsFactor));
 	    val=0.0;
 	  }
   	}
       }
-      //Clear the numTS, which clutter the final plot.
+      //Clear the evtcnt and numTS, which clutter the final plot.
       ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
 						   spg2offset  , 0.0);
       ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
@@ -215,11 +206,13 @@ void HcalDataFormatClient::analyze(void){
   	chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
 	if (! (Chann_DataIntegrityCheck_[fednum]))  
 	  continue;
+  	evtcnt = Chann_DataIntegrityCheck_[fednum]->GetBinContent(chn2offset,
+								  spg2offset);
   	for (int xbin=1; xbin<=2; xbin++) {
   	  for (int ybin=1; ybin<=2; ybin++) {
   	    val = Chann_DataIntegrityCheck_[fednum]->GetBinContent(chn2offset+xbin,
   								   spg2offset+ybin);
-  	    if ( (val) && (ievt_) ) {
+  	    if ( (val) && (evtcnt) ) {
 	      //Lower pair of bins don't scale with just the timesamples per event.
 	      if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
 	      else {
@@ -228,11 +221,10 @@ void HcalDataFormatClient::analyze(void){
 	      }
   	      Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset+xbin,
   							       spg2offset+ybin,
-  							       val/(ievt_*tsFactor));
+  							       val/(evtcnt*tsFactor));
 	    }
   	  }
   	}
-	//Remove the channel's event count from sight.
 	Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset,
 							 spg2offset,0.0);
       }
@@ -251,19 +243,6 @@ void HcalDataFormatClient::getHistograms(bool getEmAll){
   if(!dbe_) return;
   cloneME_=false;
   char name[150];     
-
-  // Set ievt_ to the value of "Data Format Total Events Processed"
-  stringstream EvtCnt;
-  EvtCnt<<process_.c_str()<<rootFolder_<<"/DataFormatMonitor/Data Format Total Events Processed";
-  // Get ievt_ value
-  MonitorElement* me = dbe_->get(EvtCnt.str().c_str());
-  if ( me ) {
-    string s = me->valueString();
-    ievt_ = -1;
-    sscanf((s.substr(2,s.length()-2)).c_str(), "%d", &ievt_);
-    if ( debug_>1 ) std::cout << "DFClient found events processed number of '" << EvtCnt.str().c_str() << "'" << std::endl;
-  }
-
 
   sprintf(name,"DataFormatMonitor/Corruption/07 LRB Data Corruption Indicators");
   LRBDataCorruptionIndicators_ = 
