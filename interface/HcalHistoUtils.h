@@ -335,7 +335,7 @@ myHist* getAnyHisto(myHist* hist,
 // MAKE GIF FROM HISTOGRAM IMAGE
 template <class myHist>
 std::string getAnyIMG(int runNo,myHist* hist, int size, std::string htmlDir,
-		      const char* xlab, const char* ylab, bool setLogy=0, bool setLogx=0 ) 
+		      const char* xlab, const char* ylab, int debug ) 
 {
   /* 
      Template function draws histogram plot, and saves it as a .gif image.
@@ -351,7 +351,7 @@ std::string getAnyIMG(int runNo,myHist* hist, int size, std::string htmlDir,
   
   // Run cleanString algorithm  -- direct call of cleanString causes a crash 
   std::string name = (std::string)hist->GetTitle();
-  //cout <<"NAME = ["<<name<<"]"<<endl;
+  if (debug>9) std::cout <<"NAME = ["<<name<<"]"<<std::endl;
   for ( unsigned int i = 0; i < name.size(); ++i ) {
     if ( name.substr(i, 6) == " - Run" ){
       name.replace(i, name.size()-i, "");
@@ -365,17 +365,18 @@ std::string getAnyIMG(int runNo,myHist* hist, int size, std::string htmlDir,
 
     if (name.substr(i,1) == "(" || name.substr(i,1)==")")
       name.replace(i,1,"_");
-    if (name.substr(i,1)==",")
+    else if (name.substr(i,1)==",")
       name.replace(i,1,"_");
-    if (name.substr(i,1)=="<")
+    else if (name.substr(i,1)=="<")
       name.replace(i,1,"_lt_");
-    if (name.substr(i,1)==">")
+    else if (name.substr(i,1)==">")
       name.replace(i,1,"_gt_");
-    if (name.substr(i,1)=="+")
+    else if (name.substr(i,1)=="+")
       name.replace(i,1,"_plus_");
-    if (name.substr(i,1)=="#")
+    else if (name.substr(i,1)=="#")
       name.replace(i,1,"");
-
+    else if (name.substr(i,1)=="/")
+      name.replace(i,1,"_div_");
   } // for (unsigned int i=0; i< name.size();
   //cout <<"NEWNAME = ["<<name<<"]"<<endl;
 
@@ -485,18 +486,6 @@ std::string getAnyIMG(int runNo,myHist* hist, int size, std::string htmlDir,
 	} //if (xaxis->GetXmax()==44)
     } // if (histtype=="TH2F")
 
-  
-  // SetLogx, SetLogy don't seem to work.  Why not?
-  if (hist->GetMaximum()>0 && hist->GetMinimum()>0)
-    {
-      // Don't bother with this yet until we get something useful working
-      /*
-      if (setLogx)
-	can->SetLogx();
-      if (setLogy)
-	can->SetLogy();  
-      */
-    }	
   can->SaveAs(saveName.c_str());  
   delete can;
   delete vert;
@@ -516,7 +505,7 @@ void htmlAnyHisto(int runNo, myHist *hist,
 		  const char* xlab, const char* ylab, 
 		  int width, ofstream& htmlFile, 
 		  std::string htmlDir,
-		  bool setLogy=0, bool setLogx=0)
+		  int debug=0)
 {
 
   /*
@@ -538,9 +527,9 @@ void htmlAnyHisto(int runNo, myHist *hist,
 
       // Form full-sized and thumbnail .gifs from histogram
       //std::string imgNameTMB = "";   
-      std::string imgNameTMB = getAnyIMG(runNo,hist,1,htmlDir,xlab,ylab,setLogy, setLogx); 
+      std::string imgNameTMB = getAnyIMG(runNo,hist,1,htmlDir,xlab,ylab,debug);
       //std::string imgName = "";   
-      std::string imgName = getAnyIMG(runNo,hist,2,htmlDir,xlab,ylab, setLogy, setLogx);  
+      std::string imgName = getAnyIMG(runNo,hist,2,htmlDir,xlab,ylab,debug);
       
       // Add thumbnail image to html code, linked to full-sized image
       if (imgName.size() != 0 )
