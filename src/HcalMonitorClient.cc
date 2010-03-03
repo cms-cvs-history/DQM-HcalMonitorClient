@@ -28,7 +28,8 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
   noise_client_ = 0;
 // #########################################################
 
-  led_client_ = 0; laser_client_ = 0; hot_client_ = 0; dead_client_=0;
+  led_client_ = 0; laser_client_ = 0; hot_client_ = 0; 
+
   tp_client_=0;
   ct_client_=0;
   beam_client_=0;
@@ -149,11 +150,6 @@ void HcalMonitorClient::initialize(const ParameterSet& ps){
     hot_client_          = new HcalHotCellClient();
     hot_client_->init(ps, dbe_,"HotCellClient");
   }
-  if( ps.getUntrackedParameter<bool>("DeadCellClient", false) ){
-    if(debug_>0)   std::cout << "===>DQM DeadCell Client is ON" << endl;
-    dead_client_          = new HcalDeadCellClient();
-    dead_client_->init(ps, dbe_,"DeadCellClient");
-  }
   if( ps.getUntrackedParameter<bool>("TrigPrimClient", false) ){
     if(debug_>0)   std::cout << "===>DQM TrigPrim Client is ON" << endl;
     tp_client_          = new HcalTrigPrimClient();
@@ -242,7 +238,6 @@ void HcalMonitorClient::resetAllME() {
   if( led_client_ )        led_client_->resetAllME();
   if( laser_client_ )      laser_client_->resetAllME();
   if( hot_client_ )        hot_client_->resetAllME();
-  if( dead_client_ )       dead_client_->resetAllME();
   if( tp_client_ )         tp_client_->resetAllME();
   if( ct_client_ )         ct_client_->resetAllME();
   if( beam_client_ )       beam_client_->resetAllME();
@@ -274,7 +269,6 @@ void HcalMonitorClient::beginJob(){
   if( led_client_ )        led_client_->beginJob();
   if( laser_client_ )      laser_client_->beginJob();
   if( hot_client_ )        hot_client_->beginJob();
-  if( dead_client_ )       dead_client_->beginJob();
   if( tp_client_ )         tp_client_->beginJob();
   if( ct_client_ )         ct_client_->beginJob();
   if( beam_client_ )       beam_client_->beginJob();
@@ -305,7 +299,6 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c) {
   if( led_client_ )        led_client_->beginRun(c);
   if( laser_client_ )      laser_client_->beginRun(c);
   if( hot_client_ )        hot_client_->beginRun(c);
-  if( dead_client_ )       dead_client_->beginRun(c);
   if( tp_client_ )         tp_client_->beginRun();
   if( ct_client_ )         ct_client_->beginRun();
   if( beam_client_ )       beam_client_->beginRun();
@@ -338,7 +331,6 @@ void HcalMonitorClient::endJob(void) {
   if( noise_client_ )         noise_client_->endJob();
 // #########################################################
 
-  if( dead_client_ )           dead_client_->endJob();
   if( hot_client_ )            hot_client_->endJob();
   if( pedestal_client_ )       pedestal_client_->endJob();
   if( led_client_ )            led_client_->endJob();
@@ -372,7 +364,6 @@ void HcalMonitorClient::endRun(const Run& r, const EventSetup& c) {
     else report(false);
   }
 
-  if( dead_client_ )        dead_client_->endRun(myquality_);
   if( hot_client_ )         hot_client_->endRun(myquality_);
   if( dataformat_client_ )  dataformat_client_->endRun();
   if( digi_client_ )        digi_client_->endRun();
@@ -457,7 +448,6 @@ void HcalMonitorClient::beginLuminosityBlock(const LuminosityBlock &l, const Eve
   if( debug_>0 ) std::cout << "HcalMonitorClient: beginLuminosityBlock" << endl;
   if( summary_client_)      summary_client_->SetLS(ilumisec_);
   if( hot_client_ )         hot_client_->SetLS(ilumisec_);
-  if( dead_client_ )        dead_client_->SetLS(ilumisec_); 
   if( dataformat_client_ )  dataformat_client_->SetLS(ilumisec_);
   if( digi_client_ )        digi_client_->SetLS(ilumisec_);
   if( rechit_client_ )      rechit_client_->SetLS(ilumisec_);
@@ -618,14 +608,6 @@ void HcalMonitorClient::analyze(){
       cpu_timer.reset(); cpu_timer.start(); 
     } 
 
-  if( dead_client_ )       dead_client_->analyze(); 
-  if (showTiming_) 
-    { 
-      cpu_timer.stop(); 
-      if (dead_client_) std::cout <<"TIMER:: DEAD CLIENT ->"<<cpu_timer.cpuTime()<<endl; 
-      cpu_timer.reset(); cpu_timer.start(); 
-    } 
-
   if( tp_client_ )         tp_client_->analyze(); 
   if (showTiming_) 
     { 
@@ -685,7 +667,6 @@ void HcalMonitorClient::createTests(void){
   if( led_client_ )        led_client_->createTests(); 
   if( laser_client_ )      laser_client_->createTests(); 
   if( hot_client_ )        hot_client_->createTests(); 
-  if( dead_client_ )       dead_client_->createTests(); 
   if( tp_client_ )         tp_client_->createTests(); 
   if( ct_client_ )         ct_client_->createTests(); 
   if( beam_client_ )       beam_client_->createTests();
@@ -720,7 +701,6 @@ void HcalMonitorClient::report(bool doUpdate) {
 // #########################################################
 
   if( hot_client_ ) hot_client_->report();
-  if( dead_client_ ) dead_client_->report();
   if( tp_client_ ) tp_client_->report();
   if( ct_client_ ) ct_client_->report();
   if( beam_client_ ) beam_client_->report();
@@ -743,8 +723,7 @@ void HcalMonitorClient::errorSummary(){
   int nTests=0;
   map<string, vector<QReport*> > errE, errW, errO;
   if( hot_client_ )        hot_client_->getTestResults(nTests,errE,errW,errO);
-  if( dead_client_ )       dead_client_->getTestResults(nTests,errE,errW,errO);
-  if( led_client_ )        led_client_->getTestResults(nTests,errE,errW,errO);
+   if( led_client_ )        led_client_->getTestResults(nTests,errE,errW,errO);
   if( laser_client_ )      laser_client_->getTestResults(nTests,errE,errW,errO);
   if( tp_client_ )         tp_client_->getTestResults(nTests,errE,errW,errO);
   if( pedestal_client_ )   pedestal_client_->getTestResults(nTests,errE,errW,errO);
@@ -902,17 +881,6 @@ void HcalMonitorClient::htmlOutput(void){
     htmlFile << "</tr></table>" << endl;
   }
 
-  if( dead_client_) {
-    htmlName = "HcalDeadCellClient.html";
-    dead_client_->htmlOutput(irun_, htmlDir, htmlName);
-    htmlFile << "<table border=0 WIDTH=\"50%\"><tr>" << endl;
-    htmlFile << "<td WIDTH=\"35%\"><a href=\"" << htmlName << "\">Dead Cell Monitor</a></td>" << endl;
-    if(dead_client_->hasErrors_Temp()) htmlFile << "<td bgcolor=red align=center>This monitor task has errors.</td>" << endl;
-    else if(dead_client_->hasWarnings_Temp()) htmlFile << "<td bgcolor=yellow align=center>This monitor task has warnings.</td>" << endl;
-    else if(dead_client_->hasOther_Temp()) htmlFile << "<td bgcolor=aqua align=center>This monitor task has messages.</td>" << endl;
-    else htmlFile << "<td bgcolor=lime align=center>This monitor task has no problems</td>" << endl;
-    htmlFile << "</tr></table>" << endl;
-  }
   if( pedestal_client_) {
     htmlName = "HcalPedestalClient.html";
     pedestal_client_->htmlOutput(irun_, htmlDir, htmlName);
