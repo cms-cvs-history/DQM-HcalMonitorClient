@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/03 18:07:08 $
- * $Revision: 1.69.4.2 $
+ * $Date: 2010/03/03 18:31:50 $
+ * $Revision: 1.69.4.3 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -40,7 +40,8 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("HotCell_BadChannelStatusMask",
-							  (1<<HcalChannelStatus::HcalCellHot)); // identify channel status values to mask
+							  ps.getUntrackedParameter<int>("BadChannelStatusMask",
+											(1<<HcalChannelStatus::HcalCellHot))); // identify channel status values to mask
   
   minerrorrate_ = ps.getUntrackedParameter<double>("HotCell_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));

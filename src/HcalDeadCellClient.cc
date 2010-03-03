@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/03 17:35:35 $
- * $Revision: 1.64.2.2 $
+ * $Date: 2010/03/03 18:07:07 $
+ * $Revision: 1.64.2.3 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -40,7 +40,8 @@ HcalDeadCellClient::HcalDeadCellClient(std::string myname, const edm::ParameterS
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DeadCell_BadChannelStatusMask",
-							  (1<<HcalChannelStatus::HcalCellDead)); // identify channel status values to mask
+							  ps.getUntrackedParameter<int>("BadChannelStatusMask",
+											(1<<HcalChannelStatus::HcalCellDead)));  // identify channel status values to mask
   
   minerrorrate_ = ps.getUntrackedParameter<double>("DeadCell_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));

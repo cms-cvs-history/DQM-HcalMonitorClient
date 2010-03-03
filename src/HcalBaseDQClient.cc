@@ -21,9 +21,7 @@ HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = 0;
-
 }
-
 
 void HcalBaseDQClient::beginJob()
 {
@@ -34,7 +32,6 @@ void HcalBaseDQClient::beginJob()
       dqmStore_->showDirStructure();
     }
 }
-
 
 void HcalBaseDQClient::setStatusMap(std::map<HcalDetId, unsigned int>& map)
   {
@@ -79,9 +76,6 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
       pcol_error[i]=901+i;
     } // for (int i=0;i<105;++i)
 
-
-  
-
   ofstream htmlFile;
   string outfile=htmlDir+name_+".html";
   htmlFile.open(outfile.c_str());
@@ -107,7 +101,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
     {
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
-      htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
       htmlFile << "cellpadding=\"10\"> " << std::endl;
       htmlFile<<"<tr align=\"center\">"<<std::endl;
       htmlAnyHisto(-1,ProblemCells->getTH2F(),"ieta","iphi",92, htmlFile,htmlDir,debug_);
@@ -116,7 +110,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
     }
   if (ProblemCellsByDepth.depth.size()>0)
     {
-      htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+      htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
       htmlFile << "cellpadding=\"10\"> " << std::endl;
       for (int i=0;i<2;++i)
 	{
@@ -133,7 +127,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
       htmlFile<<"</table>"<<endl;
    }
     
-  htmlFile << "<table align=\"center\" border=\"0\" cellspacing=\"0\" " << std::endl;
+  htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
   htmlFile << "cellpadding=\"10\"> " << std::endl;
   
 

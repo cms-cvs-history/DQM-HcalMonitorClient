@@ -535,7 +535,7 @@ void htmlAnyHisto(int runNo, myHist *hist,
       if (imgName.size() != 0 )
 	{
 	  // Always make width = 100% ?
-	  htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgNameTMB << "\" width = \"100%\"></a></td>" << endl;
+	  htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgNameTMB << "\" width = \"100%\"></a><br>"<<hist->GetName()<<"</td>" << endl;
 	}
       else
 	{

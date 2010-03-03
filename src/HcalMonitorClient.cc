@@ -1,16 +1,18 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/03 17:35:35 $
- * $Revision: 1.92.2.2 $
+ * $Date: 2010/03/03 18:07:08 $
+ * $Revision: 1.92.2.3 $
  * \author J. Temple
  * 
  */
 
 #include "DQM/HcalMonitorClient/interface/HcalMonitorClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDeadCellClient.h"
-#include "DQM/HcalMonitorClient/interface/HcalRecHitClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalHotCellClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalRecHitClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDigiClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h"
 
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -60,12 +62,17 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   // Add all relevant clients
   clients_.reserve(12); // any reason to reserve ahead of time?
 
+  clients_.push_back(new HcalBaseDQClient((string)"HcalMonitorModule",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DeadCellMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalDeadCellClient((string)"DeadCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"HotCellMonitor")!=enabledClients_.end())
    clients_.push_back(new HcalHotCellClient((string)"HotCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"RecHitMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalRecHitClient((string)"RecHitMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DigiMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDigiClient((string)"DigiMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"TrigPrimMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalTrigPrimClient((string)"TrigPrimMonitor",ps));
 
 } // HcalMonitorClient constructor
 
