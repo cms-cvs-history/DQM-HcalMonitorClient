@@ -11,10 +11,10 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/03 17:35:35 $
- * $Revision: 1.64.2.2 $
+ * $Date: 2010/03/03 18:07:08 $
+ * $Revision: 1.69.4.2 $
  * \author J. Temple
- * \brief Dead Cell Client class
+ * \brief Hot Cell Client class
  */
 
 using namespace std;
@@ -33,19 +33,19 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
   prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DeadCellFolder","DeadCellMonitor_Hcal/"); // DeadCellMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<string>("HotCellFolder","HotCellMonitor_Hcal/"); // HotCellMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
-  badChannelStatusMask_   = ps.getUntrackedParameter<int>("DeadCell_BadChannelStatusMask",
+  badChannelStatusMask_   = ps.getUntrackedParameter<int>("HotCell_BadChannelStatusMask",
 							  (1<<HcalChannelStatus::HcalCellHot)); // identify channel status values to mask
   
-  minerrorrate_ = ps.getUntrackedParameter<double>("DeadCell_minerrorrate",
+  minerrorrate_ = ps.getUntrackedParameter<double>("HotCell_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
-  minevents_    = ps.getUntrackedParameter<int>("DeadCell_minevents",
-						ps.getUntrackedParameter<int>("minevents",1000));
+  minevents_    = ps.getUntrackedParameter<int>("HotCell_minevents",
+						ps.getUntrackedParameter<int>("minevents",100));
 }
 
 void HcalHotCellClient::analyze()

@@ -7,6 +7,35 @@
 using namespace std;
 using namespace edm;
 
+HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
+{
+  name_=s;
+  enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
+  debug_                 = ps.getUntrackedParameter<int>("debug",0);
+  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
+    prefixME_.append("/");
+
+  subdir_="HcalInfo/";
+  subdir_=prefixME_+subdir_;
+
+  cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
+  badChannelStatusMask_   = 0;
+
+}
+
+
+void HcalBaseDQClient::beginJob()
+{
+  dqmStore_ = Service<DQMStore>().operator->();
+  if (debug_>0) 
+    {
+      std::cout <<"<HcalBaseDQClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
+      dqmStore_->showDirStructure();
+    }
+}
+
+
 void HcalBaseDQClient::setStatusMap(std::map<HcalDetId, unsigned int>& map)
   {
     /* Get the list of all bad channels in the status map,
@@ -34,6 +63,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
       return;
     }
 
+  if (debug_>2) std::cout <<"\t<HcalBaseDQClient::htmlOutput>  Preparing html for task: "<<name_<<std::endl;
   int pcol_error[105];
  for( int i=0; i<105; ++i )
     {
