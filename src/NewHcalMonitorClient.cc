@@ -1,14 +1,14 @@
 /*
  * \file NewHcalMonitorClient.cc
  * 
- * $Date: 2010/03/02 09:24:00 $
- * $Revision:  1.00 $
+ * $Date: 2010/03/03 15:11:13 $
+ * $Revision: 1.1.2.1 $
  * \author J. Temple
  * 
  */
 
 #include "DQM/HcalMonitorClient/interface/NewHcalMonitorClient.h"
-#include "DQM/HcalMonitorClient/interface/NewHcalDeadCellClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDeadCellClient.h"
 
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -58,9 +58,8 @@ NewHcalMonitorClient::NewHcalMonitorClient(const ParameterSet& ps)
   // Add all relevant clients
   clients_.reserve(12); // any reason to reserve ahead of time?
 
-  //NewHcalDeadCellClient* x = new NewHcalDeadCellClient();
   if (find(enabledClients_.begin(), enabledClients_.end(),"DeadCellMonitor")!=enabledClients_.end())
-    clients_.push_back(new NewHcalDeadCellClient((string)"DeadCellMonitor",ps));
+    clients_.push_back(new HcalDeadCellClient((string)"DeadCellMonitor",ps));
 
 } // NewHcalMonitorClient constructor
 
