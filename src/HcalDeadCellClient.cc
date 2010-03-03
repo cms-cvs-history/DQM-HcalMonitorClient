@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/03 15:29:32 $
- * $Revision: 1.64.2.1 $
+ * $Date: 2010/03/03 17:35:35 $
+ * $Revision: 1.64.2.2 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -37,10 +37,7 @@ HcalDeadCellClient::HcalDeadCellClient(std::string myname, const edm::ParameterS
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
-  
-  baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
-  if (baseHtmlDir_.size()>0 && baseHtmlDir_.substr(baseHtmlDir_.size()-1,baseHtmlDir_.size())!="/")
-    baseHtmlDir_.append("/");
+
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DeadCell_BadChannelStatusMask",
 							  (1<<HcalChannelStatus::HcalCellDead)); // identify channel status values to mask

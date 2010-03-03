@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/03 15:29:32 $
- * $Revision: 1.64.2.1 $
+ * $Date: 2010/03/03 17:35:35 $
+ * $Revision: 1.47.4.1 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -37,10 +37,7 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
-  
-  baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
-  if (baseHtmlDir_.size()>0 && baseHtmlDir_.substr(baseHtmlDir_.size()-1,baseHtmlDir_.size())!="/")
-    baseHtmlDir_.append("/");
+
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("RecHit_BadChannelStatusMask",0); // identify channel status values to mask
 
