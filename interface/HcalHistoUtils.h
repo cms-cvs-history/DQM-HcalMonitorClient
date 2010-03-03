@@ -10,10 +10,17 @@
 #include "TStyle.h"
 #include "TColor.h"
 
+#include "TH1.h"
+#include "TCanvas.h"
+#include "TGaxis.h"
+
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TProfile.h"
 #include "TFile.h"
+
+#include <iostream>
+#include <fstream>
 
 /******************************************************************************
  *
@@ -53,7 +60,7 @@ inline TH1F* getTH1F(std::string name, std::string process, std::string rootfold
   using std::endl;
   
   if (!dbe_) return NULL;
-  stringstream title;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
 
   MonitorElement* me = dbe_->get(title.str().c_str()); // get Monitor Element named 'title'
@@ -67,7 +74,7 @@ inline TH1F* getTH1F(std::string name, std::string process, std::string rootfold
   if (verb) 
     cout << "Found '" << title.str().c_str() << "'" << endl;
 
-  stringstream clonehisto;
+  std::stringstream clonehisto;
   if (clone)
     {
       clonehisto<<"ME "<<name.c_str();
@@ -83,7 +90,7 @@ inline TH2F* getTH2F(std::string name, std::string process, std::string rootfold
   using std::endl;
   
   if (!dbe_) return NULL;
-  stringstream title;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
 
   MonitorElement* me = dbe_->get(title.str().c_str()); // get Monitor Element named 'title'
@@ -97,7 +104,7 @@ inline TH2F* getTH2F(std::string name, std::string process, std::string rootfold
   if (verb) 
     cout << "Found '" << title.str().c_str() << "'" << endl;
 
-  stringstream clonehisto;
+  std::stringstream clonehisto;
   if (clone)
     {
       clonehisto<<"ME "<<name.c_str();
@@ -114,7 +121,7 @@ inline TH3F* getTH3F(std::string name, std::string process, std::string rootfold
   using std::endl;
   
   if (!dbe_) return NULL;
-  stringstream title;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
 
   MonitorElement* me = dbe_->get(title.str().c_str()); // get Monitor Element named 'title'
@@ -128,7 +135,7 @@ inline TH3F* getTH3F(std::string name, std::string process, std::string rootfold
   if (verb) 
     cout << "Found '" << title.str().c_str() << "'" << endl;
 
-  stringstream clonehisto;
+  std::stringstream clonehisto;
   if (clone)
     {
       clonehisto<<"ME "<<name.c_str();
@@ -144,7 +151,7 @@ inline TProfile* getTProfile(std::string name, std::string process, std::string 
   using std::endl;
   
   if (!dbe_) return NULL;
-  stringstream title;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
 
   MonitorElement* me = dbe_->get(title.str().c_str()); // get Monitor Element named 'title'
@@ -158,7 +165,7 @@ inline TProfile* getTProfile(std::string name, std::string process, std::string 
   if (verb) 
     cout << "Found '" << title.str().c_str() << "'" << endl;
 
-  stringstream clonehisto;
+  std::stringstream clonehisto;
   if (clone)
     {
       clonehisto<<"ME "<<name.c_str();
@@ -174,7 +181,7 @@ inline TProfile2D* getTProfile2D(std::string name, std::string process, std::str
   using std::endl;
   
   if (!dbe_) return NULL;
-  stringstream title;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
 
   MonitorElement* me = dbe_->get(title.str().c_str()); // get Monitor Element named 'title'
@@ -188,7 +195,7 @@ inline TProfile2D* getTProfile2D(std::string name, std::string process, std::str
   if (verb) 
     cout << "Found '" << title.str().c_str() << "'" << endl;
 
-  stringstream clonehisto;
+  std::stringstream clonehisto;
   if (clone)
     {
       clonehisto<<"ME "<<name.c_str();
@@ -231,8 +238,8 @@ myHist* getAnyHisto(myHist* hist,
   if (!dbe_) return NULL;
 
 
-  stringstream clonehisto;
-  stringstream title;
+  std::stringstream clonehisto;
+  std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
   //sprintf(title, "%sHcal/%s",process.c_str(),name.c_str());
 
