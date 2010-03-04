@@ -37,6 +37,7 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                                                                     "RecHitMonitor",
                                                                     "DigiMonitor",
                                                                     "TrigPrimMonitor",
+                                                                    "Summary"
                                                                     ]
                                                                    ),
                             )

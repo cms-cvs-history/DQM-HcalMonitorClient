@@ -5,6 +5,8 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
+class EtaPhiHists; // forward declaration
+
 class HcalRecHitClient : public HcalBaseDQClient {
 
  public:
@@ -35,12 +37,12 @@ class HcalRecHitClient : public HcalBaseDQClient {
  private:
   int nevts_;
 
-  EtaPhiHists meEnergyByDepth;
-  EtaPhiHists meEnergyThreshByDepth;
-  EtaPhiHists meTimeByDepth;
-  EtaPhiHists meTimeThreshByDepth;
-  EtaPhiHists meSqrtSumEnergy2ByDepth;
-  EtaPhiHists meSqrtSumEnergy2ThreshByDepth;
+  EtaPhiHists* meEnergyByDepth;
+  EtaPhiHists* meEnergyThreshByDepth;
+  EtaPhiHists* meTimeByDepth;
+  EtaPhiHists* meTimeThreshByDepth;
+  EtaPhiHists* meSqrtSumEnergy2ByDepth;
+  EtaPhiHists* meSqrtSumEnergy2ThreshByDepth;
 
   MonitorElement* meHBEnergy_1D;
   MonitorElement* meHEEnergy_1D;

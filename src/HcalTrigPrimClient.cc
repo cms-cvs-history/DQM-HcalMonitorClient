@@ -11,8 +11,8 @@
 /*
  * \file HcalTrigPrimClient.cc
  * 
- * $Date: 2010/03/03 18:07:07 $
- * $Revision: 1.64.2.3 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.16.4.2 $
  * \author J. Temple
  * \brief Hcal Trigger Primitive Client class
  */
@@ -45,7 +45,7 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
   minerrorrate_ = ps.getUntrackedParameter<double>("TrigPrim_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
   minevents_    = ps.getUntrackedParameter<int>("TrigPrim_minevents",
-						ps.getUntrackedParameter<int>("minevents",1000));
+						ps.getUntrackedParameter<int>("minevents",1));
 }
 
 void HcalTrigPrimClient::analyze()
@@ -69,16 +69,16 @@ void HcalTrigPrimClient::calculateProblems()
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
     }
-  for  (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]!=0) 
+      if (ProblemCellsByDepth->depth[d]!=0) 
 	{
-	  ProblemCellsByDepth.depth[d]->Reset();
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMinimum(0.);
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
-
+  enoughevents_=true;
   // Get histograms that are used in testing
   // currently none used,
 
@@ -100,15 +100,15 @@ void HcalTrigPrimClient::calculateProblems()
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
   // setting of the underflow bin to 0, and we can plot results as a raw rate between 0-1.
   
-  for (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]==0) continue;
+      if (ProblemCellsByDepth->depth[d]==0) continue;
     
       //totalevents=DigiPresentByDepth[d]->GetBinContent(0);
       totalevents=0;
       if (totalevents==0 || totalevents<minevents_) continue;
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       problemvalue=0;
       for (int eta=0;eta<etabins;++eta)
 	{
@@ -140,7 +140,7 @@ void HcalTrigPrimClient::calculateProblems()
 		    problemvalue=999; 		
 		}
 
-	      ProblemCellsByDepth.depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
 	} // loop on eta
@@ -179,6 +179,7 @@ void HcalTrigPrimClient::endJob(){}
 
 void HcalTrigPrimClient::beginRun(void)
 {
+  enoughevents_=false;
   if (!dqmStore_) 
     {
       if (debug_>0) std::cout <<"<HcalTrigPrimClient::beginRun> dqmStore does not exist!"<<std::endl;
@@ -196,9 +197,10 @@ void HcalTrigPrimClient::beginRun(void)
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_triggerprimitives");
-  ProblemCellsByDepth.setup(dqmStore_," Problem Trigger Primitive Rate");
-  for (unsigned int i=0; i<ProblemCellsByDepth.depth.size();++i)
-    problemnames_.push_back(ProblemCellsByDepth.depth[i]->getName());
+  ProblemCellsByDepth = new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem Trigger Primitive Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
 }
 
@@ -227,9 +229,9 @@ bool HcalTrigPrimClient::hasErrors_Temp(void)
             {
               ieta=CalcIeta(hist_eta,depth+1);
 	      if (ieta==-9999) continue;
-	      if (ProblemCellsByDepth.depth[depth]==0)
+	      if (ProblemCellsByDepth->depth[depth]==0)
 		  continue;
-	      if (ProblemCellsByDepth.depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
 		++problemcount;
 
 	    } // for (int hist_phi=1;...)

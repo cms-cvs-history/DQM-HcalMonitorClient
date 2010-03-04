@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/03 18:07:08 $
- * $Revision: 1.92.2.3 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.92.2.4 $
  * \author J. Temple
  * 
  */
@@ -13,6 +13,7 @@
 #include "DQM/HcalMonitorClient/interface/HcalRecHitClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDigiClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalSummaryClient.h"
 
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -22,11 +23,12 @@
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include "DQMServices/Core/interface/DQMStore.h"
+#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "CondFormats/HcalObjects/interface/HcalChannelStatus.h"
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 #include "CondFormats/HcalObjects/interface/HcalCondObjectContainer.h"
-
+#include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
 
 #include <iostream>
 #include <iomanip>
@@ -58,6 +60,8 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
       for (unsigned int i=0;i<enabledClients_.size();++i)
 	  std::cout <<enabledClients_[i]<<std::endl;
     } // if (debug_>0)
+
+  ChannelStatus=0; 
   
   // Add all relevant clients
   clients_.reserve(12); // any reason to reserve ahead of time?
@@ -73,7 +77,9 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
     clients_.push_back(new HcalDigiClient((string)"DigiMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"TrigPrimMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalTrigPrimClient((string)"TrigPrimMonitor",ps));
-
+  if (find(enabledClients_.begin(), enabledClients_.end(),"Summary")!=enabledClients_.end())
+    summaryClient_ = new HcalSummaryClient((string)"ReportSummaryClient",ps);
+  
 } // HcalMonitorClient constructor
 
 
@@ -82,7 +88,7 @@ HcalMonitorClient::~HcalMonitorClient()
   if (debug_>0) std::cout <<"<HcalMonitorClient>  Exiting..."<<std::endl;
   for (unsigned int i=0;i<clients_.size();++i)
     delete clients_[i];
-  if (summaryClient_) delete summaryClient_;
+  //if (summaryClient_) delete summaryClient_;
 
 }
 
@@ -113,7 +119,8 @@ void HcalMonitorClient::beginJob(void)
   for ( unsigned int i=0; i<clients_.size();++i ) 
     clients_[i]->beginJob();
 
-  //if ( summaryClient_ ) summaryClient_->beginJob();
+  if ( summaryClient_ ) summaryClient_->beginJob();
+  
 
 } // void HcalMonitorClient::beginJob(void)
 
@@ -137,6 +144,21 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
   c.get<HcalChannelQualityRcd>().get(p);
   chanquality_= new HcalChannelQuality(*p.product());
  
+  if (dqmStore_ && ChannelStatus==0)
+    {
+      dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
+      ChannelStatus=new EtaPhiHists;
+      ChannelStatus->setup(dqmStore_,"ChannelStatus");
+      stringstream x;
+      for (unsigned int d=0;d<ChannelStatus->depth.size();++d)
+	{
+	  ChannelStatus->depth[d]->Reset();
+	  x<<"1+log2(status) for HCAL depth "<<d+1;
+	  if (ChannelStatus->depth[d]) ChannelStatus->depth[d]->setTitle(x.str().c_str());
+	  x.str("");
+	}
+    }
+
   // Find only channels with non-zero quality, and add them to badchannelmap
   std::vector<DetId> mydetids = chanquality_->getAllChannels();
   for (std::vector<DetId>::const_iterator i = mydetids.begin();i!=mydetids.end();++i)
@@ -146,6 +168,18 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
       int status=(chanquality_->getValues(id))->getValue();
       if (status==0) continue;
       badchannelmap[id]=status;
+
+      // Fill Channel Status histogram
+      if (dqmStore_==0) continue;
+      int depth=id.depth();
+      if (depth<1 || depth>4) continue;
+      int ieta=id.ieta();
+      int iphi=id.iphi();
+      if (id.subdet()==HcalForward)
+	ieta>0 ? ++ieta: --ieta;
+
+      double logstatus = log2(1.*status)+1;
+      if (ChannelStatus->depth[depth-1]) ChannelStatus->depth[depth-1]->Fill(ieta,iphi,logstatus);
     }
     
   for (unsigned int i=0;i<clients_.size();++i)
@@ -153,6 +187,13 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
       clients_[i]->beginRun();
       clients_[i]->setStatusMap(badchannelmap);
     }
+  
+  if (summaryClient_!=0)
+    {
+      summaryClient_->getFriends(clients_);
+      summaryClient_->beginRun();
+    }
+
 } // void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
 
 void HcalMonitorClient::beginRun()
@@ -162,6 +203,21 @@ void HcalMonitorClient::beginRun()
   begin_run_ = true;
   end_run_   = false;
   jevt_ = 0;
+
+  if (dqmStore_==0 || ChannelStatus!=0) return;
+  dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
+  cout <<"BR TRY"<<endl;
+  ChannelStatus=new EtaPhiHists;
+  cout <<"OK1"<<endl;
+  ChannelStatus->setup(dqmStore_,"ChannelStatus");
+  cout <<"YES"<<endl;
+  stringstream x;
+  for (unsigned int d=0;d<ChannelStatus->depth.size();++d)
+    {
+      x<<"1+log2(status) for HCAL depth "<<d+1;
+      if (ChannelStatus->depth[d]) ChannelStatus->depth[d]->setTitle(x.str().c_str());
+      x.str("");
+    }
 } // void HcalMonitorClient::beginRun()
 
 void HcalMonitorClient::setup(void)
@@ -186,7 +242,7 @@ void HcalMonitorClient::analyze(const edm::Event & e, const edm::EventSetup & c)
 
 } // void HcalMonitorClient::analyze(const edm::Event & e, const edm::EventSetup & c)
 
-void HcalMonitorClient::analyze()
+void HcalMonitorClient::analyze(int LS)
 {
   if (debug_>0) std::cout <<"HcalMonitorClient::analyze() "<<std::endl;
   current_time_ = time(NULL);
@@ -194,6 +250,8 @@ void HcalMonitorClient::analyze()
   jevt_++;
   for (unsigned int i=0;i<clients_.size();++i)
     clients_[i]->analyze();
+  if (summaryClient_!=0)
+    summaryClient_->analyze(LS);
 } // void HcalMonitorClient::analyze()
 
 
@@ -207,7 +265,7 @@ void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const Event
 	return;
       last_time_update_ = current_time_;
     }
-  this->analyze();
+  this->analyze(l.luminosityBlock());
 } // void HcalMonitorClient::endLuminosityBlock
 
 void HcalMonitorClient::endRun(void)
@@ -238,7 +296,7 @@ void HcalMonitorClient::endJob(void)
 
   for ( unsigned int i=0; i<clients_.size(); i++ ) 
     clients_[i]->endJob();
-  if ( summaryClient_ ) summaryClient_->endJob();
+  //if ( summaryClient_ ) summaryClient_->endJob();
 
 } // void HcalMonitorClient::endJob(void)
 

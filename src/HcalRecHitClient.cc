@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/03 18:07:08 $
- * $Revision: 1.47.4.2 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.47.4.3 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -47,6 +47,7 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
 						   ps.getUntrackedParameter<double>("minerrorrate",0.05));
   minevents_    = ps.getUntrackedParameter<int>("RecHit_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
+  ProblemCellsByDepth=0;
 }
 
 void HcalRecHitClient::analyze()
@@ -155,8 +156,8 @@ void HcalRecHitClient::analyze()
 		    }
 		  // normalize 2D plots by number of events
 		 
-		  meEnergyByDepth.depth[mydepth]->setBinContent(eta+1, phi+1, SumEnergyByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-		  meTimeByDepth.depth[mydepth]->setBinContent(eta+1, phi+1, SumTimeByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyByDepth[mydepth]->GetBinContent(eta+1, phi+1));
+		  meEnergyByDepth->depth[mydepth]->setBinContent(eta+1, phi+1, SumEnergyByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyByDepth[mydepth]->GetBinContent(eta+1, phi+1));
+		  meTimeByDepth->depth[mydepth]->setBinContent(eta+1, phi+1, SumTimeByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyByDepth[mydepth]->GetBinContent(eta+1, phi+1));
 		} // (OccupancyByDepth[mydepth]->GetBinContent(eta+1,phi+1)>0)
                 
 	      if (OccupancyThreshByDepth[mydepth]==0) continue;
@@ -197,11 +198,11 @@ void HcalRecHitClient::analyze()
 			}
 		    }
 		  // fill 2D plots
-		  meEnergyThreshByDepth.depth[mydepth]->setBinContent(eta+1, phi+1, SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-		  meTimeThreshByDepth.depth[mydepth]->setBinContent(eta+1, phi+1, SumTimeThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
+		  meEnergyThreshByDepth->depth[mydepth]->setBinContent(eta+1, phi+1, SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
+		  meTimeThreshByDepth->depth[mydepth]->setBinContent(eta+1, phi+1, SumTimeThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
 		}
 	    } // for (int phi=0;phi<72;++phi)
-	} // for (int eta=0;eta<OccupancyByDepth...;++eta)
+	} // for (int eta=0;eta<OccupancyByDepth->..;++eta)
     } // for (int mydepth=0;...)
 
 
@@ -232,25 +233,25 @@ void HcalRecHitClient::calculateProblems()
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
     }
-  for  (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]!=0) 
+      if (ProblemCellsByDepth->depth[d]!=0) 
 	{
-	  ProblemCellsByDepth.depth[d]->Reset();
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMinimum(0.);
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
 
-  for (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]==0) continue;
+      if (ProblemCellsByDepth->depth[d]==0) continue;
 
       // Get total events from some future histogram
       //totalevents=DigiPresentByDepth[d]->GetBinContent(0); // get totalevents from each depth, in case they differ
       if (totalevents==0 || totalevents<minevents_) continue;
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       problemvalue=0;
       for (int eta=0;eta<etabins;++eta)
 	{
@@ -286,7 +287,7 @@ void HcalRecHitClient::calculateProblems()
 		}
 
 
-	      ProblemCellsByDepth.depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
 	} // loop on eta
@@ -344,18 +345,23 @@ void HcalRecHitClient::beginRun(void)
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_rechits");
-  ProblemCellsByDepth.setup(dqmStore_," Problem RecHit Rate");
-  for (unsigned int i=0; i<ProblemCellsByDepth.depth.size();++i)
-    problemnames_.push_back(ProblemCellsByDepth.depth[i]->getName());
+  ProblemCellsByDepth=new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem RecHit Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_AllRecHits");
-  meEnergyByDepth.setup(dqmStore_,"RecHit Average Energy","GeV");
-  meTimeByDepth.setup(dqmStore_,"RecHit Average Time","nS");
+  meEnergyByDepth = new EtaPhiHists();
+  meEnergyByDepth->setup(dqmStore_,"RecHit Average Energy","GeV");
+  meTimeByDepth = new EtaPhiHists();
+  meTimeByDepth->setup(dqmStore_,"RecHit Average Time","nS");
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX");
-  meEnergyThreshByDepth.setup(dqmStore_,"Above Threshold RecHit Average Energy","GeV");
-  meTimeThreshByDepth.setup(dqmStore_,"Above Threshold RecHit Average Time","nS");
+  meEnergyThreshByDepth = new EtaPhiHists();
+  meEnergyThreshByDepth->setup(dqmStore_,"Above Threshold RecHit Average Energy","GeV");
+  meTimeThreshByDepth = new EtaPhiHists();
+  meTimeThreshByDepth->setup(dqmStore_,"Above Threshold RecHit Average Time","nS");
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_AllRecHits/rechit_1D_plots/");
   meHBEnergy_1D=dqmStore_->book1D("HB_energy_1D","HB Average Energy Per RecHit;Energy (GeV)",400,-5,15);
@@ -409,9 +415,9 @@ bool HcalRecHitClient::hasErrors_Temp(void)
             {
               ieta=CalcIeta(hist_eta,depth+1);
 	      if (ieta==-9999) continue;
-	      if (ProblemCellsByDepth.depth[depth]==0)
+	      if (ProblemCellsByDepth->depth[depth]==0)
 		  continue;
-	      if (ProblemCellsByDepth.depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
 		++problemcount;
 
 	    } // for (int hist_phi=1;...)

@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/03 18:07:07 $
- * $Revision: 1.64.2.3 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.64.2.4 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -47,6 +47,7 @@ HcalDeadCellClient::HcalDeadCellClient(std::string myname, const edm::ParameterS
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
   minevents_    = ps.getUntrackedParameter<int>("DeadCell_minevents",
 						ps.getUntrackedParameter<int>("minevents",1000));
+  ProblemCellsByDepth=0;
 }
 
 void HcalDeadCellClient::analyze()
@@ -70,13 +71,13 @@ void HcalDeadCellClient::calculateProblems()
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
     }
-  for  (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]!=0) 
+      if (ProblemCellsByDepth->depth[d]!=0) 
 	{
-	  ProblemCellsByDepth.depth[d]->Reset();
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMinimum(0.);
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
 
@@ -112,16 +113,17 @@ void HcalDeadCellClient::calculateProblems()
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
   // setting of the underflow bin to 0, and we can plot results as a raw rate between 0-1.
   
-  for (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]==0) continue;
+      if (ProblemCellsByDepth->depth[d]==0) continue;
       if (DigiPresentByDepth[d]==0) continue;
       // Get number of entries from DigiPresent histogram 
       // (need to do this for offline DQM combinations of output)
       totalevents=DigiPresentByDepth[d]->GetBinContent(0);
       if (totalevents==0 || totalevents<minevents_) continue;
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      enoughevents_=true; // kind of a hack here
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       problemvalue=0;
       for (int eta=0;eta<etabins;++eta)
 	{
@@ -177,7 +179,7 @@ void HcalDeadCellClient::calculateProblems()
 		}
 
 
-	      ProblemCellsByDepth.depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
 	} // loop on eta
@@ -218,6 +220,7 @@ void HcalDeadCellClient::endJob(){}
 
 void HcalDeadCellClient::beginRun(void)
 {
+  enoughevents_=false;
   if (!dqmStore_) 
     {
       if (debug_>0) std::cout <<"<HcalDeadCellClient::beginRun> dqmStore does not exist!"<<std::endl;
@@ -233,9 +236,10 @@ void HcalDeadCellClient::beginRun(void)
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_deadcells");
-  ProblemCellsByDepth.setup(dqmStore_," Problem Dead Cell Rate");
-  for (unsigned int i=0; i<ProblemCellsByDepth.depth.size();++i)
-    problemnames_.push_back(ProblemCellsByDepth.depth[i]->getName());
+  ProblemCellsByDepth = new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem Dead Cell Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
 }
 
@@ -264,9 +268,9 @@ bool HcalDeadCellClient::hasErrors_Temp(void)
             {
               ieta=CalcIeta(hist_eta,depth+1);
 	      if (ieta==-9999) continue;
-	      if (ProblemCellsByDepth.depth[depth]==0)
+	      if (ProblemCellsByDepth->depth[depth]==0)
 		  continue;
-	      if (ProblemCellsByDepth.depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
 		++problemcount;
 
 	    } // for (int hist_phi=1;...)
@@ -304,8 +308,8 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
     }
   for (int d=0;d<4;++d)
     {
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       for (int hist_eta=0;hist_eta<etabins;++hist_eta)
 	{
 	  ieta=CalcIeta(hist_eta,d+1);
@@ -315,7 +319,7 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
 	      iphi=hist_phi+1;
 	      
 	      // ProblemCells have already been normalized
-	      binval=ProblemCellsByDepth.depth[d]->getBinContent(hist_eta+1,hist_phi+1);
+	      binval=ProblemCellsByDepth->depth[d]->getBinContent(hist_eta+1,hist_phi+1);
 	      
 	      // Set subdetector labels for output
 	      if (d<2)

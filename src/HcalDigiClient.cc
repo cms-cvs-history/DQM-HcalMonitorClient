@@ -11,8 +11,8 @@
 /*
  * \file HcalDigiClient.cc
  * 
- * $Date: 2010/03/03 18:31:50 $
- * $Revision: 1.69.4.3 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.61.4.1 $
  * \author J. Temple
  * \brief DigiClient class
  */
@@ -46,7 +46,8 @@ HcalDigiClient::HcalDigiClient(std::string myname, const edm::ParameterSet& ps)
   minerrorrate_ = ps.getUntrackedParameter<double>("Digi_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
   minevents_    = ps.getUntrackedParameter<int>("Digi_minevents",
-						ps.getUntrackedParameter<int>("minevents",100));
+						ps.getUntrackedParameter<int>("minevents",1));
+  ProblemCellsByDepth=0;
 }
 
 void HcalDigiClient::analyze()
@@ -70,13 +71,13 @@ void HcalDigiClient::calculateProblems()
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
     }
-  for  (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]!=0) 
+      if (ProblemCellsByDepth->depth[d]!=0) 
 	{
-	  ProblemCellsByDepth.depth[d]->Reset();
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMinimum(0.);
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
 
@@ -116,14 +117,15 @@ void HcalDigiClient::calculateProblems()
       return;
     }
 
-  for (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]==0) continue;
+      if (ProblemCellsByDepth->depth[d]==0) continue;
       if (BadDigisByDepth[d]==0 || GoodDigisByDepth[d]==0) continue;
       totalevents=GoodDigisByDepth[d]->GetBinContent(0,0);
       if (totalevents<minevents_ ) continue;
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      enoughevents_=true;
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       for (int eta=0;eta<etabins;++eta)
 	{
 	  int ieta=CalcIeta(eta,d+1);
@@ -151,7 +153,7 @@ void HcalDigiClient::calculateProblems()
 		  if (badstatusmap.find(hcalid)!=badstatusmap.end())
 		    problemvalue=999;
 		}
-	      ProblemCellsByDepth.depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
 	} // loop on eta
@@ -192,6 +194,7 @@ void HcalDigiClient::endJob(){}
 
 void HcalDigiClient::beginRun(void)
 {
+  enoughevents_=false;
   if (!dqmStore_) 
     {
       if (debug_>0) std::cout <<"<HcalDigiClient::beginRun> dqmStore does not exist!"<<std::endl;
@@ -207,9 +210,10 @@ void HcalDigiClient::beginRun(void)
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_digis");
-  ProblemCellsByDepth.setup(dqmStore_," Problem Digi Rate");
-  for (unsigned int i=0; i<ProblemCellsByDepth.depth.size();++i)
-    problemnames_.push_back(ProblemCellsByDepth.depth[i]->getName());
+  ProblemCellsByDepth = new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem Digi Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
 }
 
@@ -238,9 +242,9 @@ bool HcalDigiClient::hasErrors_Temp(void)
             {
               ieta=CalcIeta(hist_eta,depth+1);
 	      if (ieta==-9999) continue;
-	      if (ProblemCellsByDepth.depth[depth]==0)
+	      if (ProblemCellsByDepth->depth[depth]==0)
 		  continue;
-	      if (ProblemCellsByDepth.depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
 		++problemcount;
 
 	    } // for (int hist_phi=1;...)

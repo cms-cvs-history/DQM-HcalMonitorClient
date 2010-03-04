@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/03 18:31:50 $
- * $Revision: 1.69.4.3 $
+ * $Date: 2010/03/03 20:02:52 $
+ * $Revision: 1.69.4.4 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -42,11 +42,12 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("HotCell_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",
 											(1<<HcalChannelStatus::HcalCellHot))); // identify channel status values to mask
-  
+
   minerrorrate_ = ps.getUntrackedParameter<double>("HotCell_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
   minevents_    = ps.getUntrackedParameter<int>("HotCell_minevents",
 						ps.getUntrackedParameter<int>("minevents",100));
+  ProblemCellsByDepth=0;
 }
 
 void HcalHotCellClient::analyze()
@@ -57,7 +58,7 @@ void HcalHotCellClient::analyze()
 
 void HcalHotCellClient::calculateProblems()
 {
- if (debug_>2) std::cout <<"\t\tHcalHotCellClient::calculateProblems()"<<std::endl;
+  if (debug_>2) std::cout <<"\t\tHcalHotCellClient::calculateProblems()"<<std::endl;
   if(!dqmStore_) return;
   double totalevents=0;
   int etabins=0, phibins=0, zside=0;
@@ -70,13 +71,13 @@ void HcalHotCellClient::calculateProblems()
       (ProblemCells->getTH2F())->SetMaximum(1.05);
       (ProblemCells->getTH2F())->SetMinimum(0.);
     }
-  for  (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]!=0) 
+      if (ProblemCellsByDepth->depth[d]!=0) 
 	{
-	  ProblemCellsByDepth.depth[d]->Reset();
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[d]->getTH2F())->SetMinimum(0.);
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
 
@@ -95,11 +96,11 @@ void HcalHotCellClient::calculateProblems()
       string s=subdir_+"hot_rechit_above_threshold/"+name[i]+"Hot Cells Above Energy Threshold";
       me=dqmStore_->get(s.c_str());
       HotAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAboveThresholdByDepth[i], debug_);
-      
+
       s=subdir_+"hot_rechit_always_above_threshold/"+name[i]+"Hot Cells Persistently Above Energy Threshold";
       me=dqmStore_->get(s.c_str());
       HotAlwaysAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAlwaysAboveThresholdByDepth[i], debug_);
-     
+
       s=subdir_+"hot_neighbortest/"+name[i]+"Hot Cells Failing Neighbor Test";
       me=dqmStore_->get(s.c_str());
       HotNeighborsByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotNeighborsByDepth[i], debug_);
@@ -112,10 +113,10 @@ void HcalHotCellClient::calculateProblems()
 
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
   // setting of the underflow bin to 0, and we can plot results as a raw rate between 0-1.
-  
-  for (unsigned int d=0;d<ProblemCellsByDepth.depth.size();++d)
+
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
     {
-      if (ProblemCellsByDepth.depth[d]==0) continue;
+      if (ProblemCellsByDepth->depth[d]==0) continue;
       if (HotAboveThresholdByDepth[d]) totalevents = HotAboveThresholdByDepth[d]->GetBinContent(0);
       else if (HotAlwaysAboveThresholdByDepth[d]) totalevents = HotAlwaysAboveThresholdByDepth[d]->GetBinContent(0);
       else if (neighbortest==true && HotNeighborsByDepth[d]) totalevents = HotNeighborsByDepth[d]->GetBinContent(0);
@@ -124,8 +125,9 @@ void HcalHotCellClient::calculateProblems()
 	  if (debug_>0) std::cout <<"<HcalHotCellClient::calculateProblems> No evaluation histograms found; no valid hot tests enabled?" << std::endl;
 	}
       if (totalevents==0 || totalevents<minevents_) continue;
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      enoughevents_=true; // kind of a hack here
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       problemvalue=0;
       for (int eta=0;eta<etabins;++eta)
 	{
@@ -144,11 +146,11 @@ void HcalHotCellClient::calculateProblems()
 	      if (problemvalue==0) continue;
 	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
 	      problemvalue = min(1.,problemvalue);
-	      
+	       
 	      zside=0;
 	      if (isHF(eta,d+1)) // shift ieta by 1 for HF
 		ieta<0 ? zside = -1 : zside = 1;
-
+	       
 	      // For problem cells that exceed our allowed rate,
 	      // set the values to -1 if the cells are already marked in the status database
 	      if (problemvalue>minerrorrate_)
@@ -162,18 +164,18 @@ void HcalHotCellClient::calculateProblems()
 		  if (badstatusmap.find(hcalid)!=badstatusmap.end())
 		    problemvalue=999;
 		}
-	      ProblemCellsByDepth.depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
 	} // loop on eta
     } // loop on depth
-
+   
   if (ProblemCells==0)
     {
       if (debug_>0) std::cout <<"<HcalHotCellClient::analyze> ProblemCells histogram does not exist!"<<endl;
       return;
     }
-
+   
   // Normalization of ProblemCell plot, in the case where there are errors in multiple depths
   etabins=(ProblemCells->getTH2F())->GetNbinsX();
   phibins=(ProblemCells->getTH2F())->GetNbinsY();
@@ -203,6 +205,7 @@ void HcalHotCellClient::endJob(){}
 
 void HcalHotCellClient::beginRun(void)
 {
+  enoughevents_=false;
   if (!dqmStore_) 
     {
       if (debug_>0) std::cout <<"<HcalHotCellClient::beginRun> dqmStore does not exist!"<<std::endl;
@@ -218,9 +221,10 @@ void HcalHotCellClient::beginRun(void)
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_hotcells");
-  ProblemCellsByDepth.setup(dqmStore_," Problem Hot Cell Rate");
-  for (unsigned int i=0; i<ProblemCellsByDepth.depth.size();++i)
-    problemnames_.push_back(ProblemCellsByDepth.depth[i]->getName());
+  ProblemCellsByDepth=new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem Hot Cell Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
 }
 
@@ -249,9 +253,9 @@ bool HcalHotCellClient::hasErrors_Temp(void)
             {
               ieta=CalcIeta(hist_eta,depth+1);
 	      if (ieta==-9999) continue;
-	      if (ProblemCellsByDepth.depth[depth]==0)
-		  continue;
-	      if (ProblemCellsByDepth.depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+	      if (ProblemCellsByDepth->depth[depth]==0)
+		continue;
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
 		++problemcount;
 
 	    } // for (int hist_phi=1;...)
@@ -288,8 +292,8 @@ void HcalHotCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
     }
   for (int d=0;d<4;++d)
     {
-      etabins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth.depth[d]->getTH2F())->GetNbinsY();
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
       for (int hist_eta=0;hist_eta<etabins;++hist_eta)
 	{
 	  ieta=CalcIeta(hist_eta,d+1);
@@ -299,7 +303,7 @@ void HcalHotCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
 	      iphi=hist_phi+1;
 	      
 	      // ProblemCells have already been normalized
-	      binval=ProblemCellsByDepth.depth[d]->getBinContent(hist_eta+1,hist_phi+1);
+	      binval=ProblemCellsByDepth->depth[d]->getBinContent(hist_eta+1,hist_phi+1);
 	      
 	      // Set subdetector labels for output
 	      if (d<2)

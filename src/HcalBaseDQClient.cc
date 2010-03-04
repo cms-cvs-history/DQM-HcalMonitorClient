@@ -21,6 +21,9 @@ HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = 0;
+  enoughevents_=true;
+  minerrorrate_=0;
+  minevents_=0;
 }
 
 void HcalBaseDQClient::beginJob()
@@ -108,19 +111,19 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
       htmlFile<<"</tr>"<<endl;
       htmlFile<<"</table>"<<endl;
     }
-  if (ProblemCellsByDepth.depth.size()>0)
+  if (ProblemCellsByDepth!=0)
     {
       htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
       htmlFile << "cellpadding=\"10\"> " << std::endl;
       for (int i=0;i<2;++i)
 	{
-	  (ProblemCellsByDepth.depth[2*i]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[2*i]->getTH2F())->SetMinimum(0.);
-	  (ProblemCellsByDepth.depth[2*i+1]->getTH2F())->SetMaximum(1.05);
-	  (ProblemCellsByDepth.depth[2*i+1]->getTH2F())->SetMinimum(0.);
+	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMinimum(0.);
+	  (ProblemCellsByDepth->depth[2*i+1]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[2*i+1]->getTH2F())->SetMinimum(0.);
 	  htmlFile<<"<tr align=\"center\">"<<std::endl;
-	  htmlAnyHisto(-1,ProblemCellsByDepth.depth[2*i]->getTH2F(),"ieta","iphi",92, htmlFile,htmlDir,debug_);
-	  htmlAnyHisto(-1,ProblemCellsByDepth.depth[2*i+1]->getTH2F(),"ieta","iphi",92, htmlFile,htmlDir,debug_);
+	  htmlAnyHisto(-1,ProblemCellsByDepth->depth[2*i]->getTH2F(),"ieta","iphi",92, htmlFile,htmlDir,debug_);
+	  htmlAnyHisto(-1,ProblemCellsByDepth->depth[2*i+1]->getTH2F(),"ieta","iphi",92, htmlFile,htmlDir,debug_);
 	  
 	  htmlFile<<"</tr>"<<endl;
 	}

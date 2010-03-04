@@ -4,8 +4,8 @@
 /*
  * \file HcalMonitorClient.h
  * 
- * $Date: 2010/03/03 15:11:13 $
- * $Revision: 1.1.2.1 $
+ * $Date: 2010/03/03 17:37:06 $
+ * $Revision: 1.45.2.1 $
  * \author J. Temple
  * 
  */
@@ -20,11 +20,12 @@
 #include "TROOT.h"
 #include "TH1.h"
 
-#include "DQM/HcalMonitorClient/interface/HcalSummaryClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalBaseDQClient.h"
+#include "DQM/HcalMonitorTasks/interface/HcalEtaPhiHists.h"
 
 class DQMStore;
 class HcalChannelQuality;
+class HcalSummaryClient;
 
 class HcalMonitorClient: public edm::EDAnalyzer
 {
@@ -38,7 +39,7 @@ public:
   virtual ~HcalMonitorClient();
 
  /// Analyze
-  void analyze(void);
+  void analyze(int LS=-1);
   void analyze(const edm::Event & e, const edm::EventSetup & c);
   
   /// BeginJob
@@ -110,14 +111,13 @@ private:
   time_t updateTime_;
   time_t dbUpdateTime_;
 
-  // std::vector<HcalClient*> clients_;
-  std::vector<HcalBaseDQClient*> clients_;  // dummy
+  std::vector<HcalBaseDQClient*> clients_;  
 
   DQMStore* dqmStore_;
   HcalChannelQuality* chanquality_;
 
   HcalSummaryClient* summaryClient_;
+  EtaPhiHists* ChannelStatus;
 };
-
 
 #endif

@@ -12,8 +12,8 @@
 /*
  * \file HcalBaseDQClient.h
  * 
- * $Date: 2010/03/03 18:08:17 $
- * $Revision: 1.1.2.1 $
+ * $Date: 2010/03/03 18:32:14 $
+ * $Revision: 1.1.2.2 $
  * \author J. Temple
  * \brief Hcal Monitor Client base class
  * based on code in EcalBarrelMonitorClient/interface/EBClient.h
@@ -23,7 +23,7 @@
 class HcalBaseDQClient
 {
  public:
-  HcalBaseDQClient(){name_="HcalBaseDQClient";subdir_="HcalInfo";badChannelStatusMask_=0;};
+  HcalBaseDQClient(){name_="HcalBaseDQClient";subdir_="HcalInfo";badChannelStatusMask_=0;enoughevents_=true;minerrorrate_=0;minevents_=0;};
   HcalBaseDQClient(std::string s, const edm::ParameterSet& ps);
   ~HcalBaseDQClient(void){}
   
@@ -32,7 +32,7 @@ class HcalBaseDQClient
   virtual void beginRun(void)          {}
   virtual void setup(void)             {}
 
-  virtual void analyze(void)           {} // fill new histograms
+  virtual void analyze(void)           {enoughevents_=true;} // fill new histograms
   virtual void calculateProblems(void) {} // update/fill ProblemCell histograms
   
   virtual void endRun(void)            {}
@@ -62,11 +62,12 @@ class HcalBaseDQClient
   double minerrorrate_;
 
   MonitorElement* ProblemCells;
-  EtaPhiHists ProblemCellsByDepth;
+  EtaPhiHists* ProblemCellsByDepth;
   std::vector<std::string> problemnames_;
 
   std::map<HcalDetId, unsigned int> badstatusmap;
   DQMStore* dqmStore_;
+  bool enoughevents_;
 }; // class HcalBaseDQClient
 
 
