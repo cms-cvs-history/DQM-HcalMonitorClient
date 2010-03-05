@@ -11,8 +11,8 @@
 /*
  * \file HcalDigiClient.cc
  * 
- * $Date: 2010/03/03 20:02:52 $
- * $Revision: 1.61.4.1 $
+ * $Date: 2010/03/04 23:43:51 $
+ * $Revision: 1.61.4.2 $
  * \author J. Temple
  * \brief DigiClient class
  */
@@ -176,6 +176,8 @@ void HcalDigiClient::calculateProblems()
 	    ProblemCells->setBinContent(eta+1,phi+1,1.);
 	}
     }
+  FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(ProblemCells);
   return;
 }
 

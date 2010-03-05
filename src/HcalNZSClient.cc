@@ -1,4 +1,4 @@
-#include "DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalNZSClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalClientUtils.h"
 #include "DQM/HcalMonitorClient/interface/HcalHistoUtils.h"
 
@@ -9,23 +9,23 @@
 #include <iostream>
 
 /*
- * \file HcalTrigPrimClient.cc
+ * \file HcalNZSClient.cc
  * 
  * $Date: 2010/03/04 23:43:52 $
  * $Revision: 1.16.4.3 $
  * \author J. Temple
- * \brief Hcal Trigger Primitive Client class
+ * \brief Hcal NZS Client class
  */
 
 using namespace std;
 using namespace edm;
 
-HcalTrigPrimClient::HcalTrigPrimClient(std::string myname)
+HcalNZSClient::HcalNZSClient(std::string myname)
 {
   name_=myname;
 }
 
-HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterSet& ps)
+HcalNZSClient::HcalNZSClient(std::string myname, const edm::ParameterSet& ps)
 {
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
@@ -33,32 +33,32 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
   prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("TrigPrimFolder","TrigPrimMonitor/"); // TrigPrimMonitor
+  subdir_                = ps.getUntrackedParameter<string>("NZSFolder","NZSMonitor/"); // NZSMonitor
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
-  badChannelStatusMask_   = ps.getUntrackedParameter<int>("TrigPrim_BadChannelStatusMask",
+  badChannelStatusMask_   = ps.getUntrackedParameter<int>("NZS_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));
   
-  minerrorrate_ = ps.getUntrackedParameter<double>("TrigPrim_minerrorrate",
+  minerrorrate_ = ps.getUntrackedParameter<double>("NZS_minerrorrate",
 						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
-  minevents_    = ps.getUntrackedParameter<int>("TrigPrim_minevents",
+  minevents_    = ps.getUntrackedParameter<int>("NZS_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   ProblemCells=0;
   ProblemCellsByDepth=0;
 }
 
-void HcalTrigPrimClient::analyze()
+void HcalNZSClient::analyze()
 {
-  if (debug_>2) std::cout <<"\tHcalTrigPrimClient::analyze()"<<std::endl;
+  if (debug_>2) std::cout <<"\tHcalNZSClient::analyze()"<<std::endl;
   calculateProblems();
 }
 
-void HcalTrigPrimClient::calculateProblems()
+void HcalNZSClient::calculateProblems()
 {
- if (debug_>2) std::cout <<"\t\tHcalTrigPrimClient::calculateProblems()"<<std::endl;
+ if (debug_>2) std::cout <<"\t\tHcalNZSClient::calculateProblems()"<<std::endl;
   if(!dqmStore_) return;
   double totalevents=0;
   int etabins=0, phibins=0, zside=0;
@@ -150,7 +150,7 @@ void HcalTrigPrimClient::calculateProblems()
 
   if (ProblemCells==0)
     {
-      if (debug_>0) std::cout <<"<HcalTrigPrimClient::analyze> ProblemCells histogram does not exist!"<<endl;
+      if (debug_>0) std::cout <<"<HcalNZSClient::analyze> ProblemCells histogram does not exist!"<<endl;
       return;
     }
 
@@ -171,23 +171,23 @@ void HcalTrigPrimClient::calculateProblems()
   return;
 }
 
-void HcalTrigPrimClient::beginJob()
+void HcalNZSClient::beginJob()
 {
   dqmStore_ = Service<DQMStore>().operator->();
   if (debug_>0) 
     {
-      std::cout <<"<HcalTrigPrimClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
+      std::cout <<"<HcalNZSClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
       dqmStore_->showDirStructure();
     }
 }
-void HcalTrigPrimClient::endJob(){}
+void HcalNZSClient::endJob(){}
 
-void HcalTrigPrimClient::beginRun(void)
+void HcalNZSClient::beginRun(void)
 {
   enoughevents_=false;
   if (!dqmStore_) 
     {
-      if (debug_>0) std::cout <<"<HcalTrigPrimClient::beginRun> dqmStore does not exist!"<<std::endl;
+      if (debug_>0) std::cout <<"<HcalNZSClient::beginRun> dqmStore does not exist!"<<std::endl;
       return;
     }
   dqmStore_->setCurrentFolder(subdir_);
@@ -209,16 +209,16 @@ void HcalTrigPrimClient::beginRun(void)
   nevts_=0;
 }
 
-void HcalTrigPrimClient::endRun(void){analyze();}
+void HcalNZSClient::endRun(void){analyze();}
 
-void HcalTrigPrimClient::setup(void){}
-void HcalTrigPrimClient::cleanup(void){}
+void HcalNZSClient::setup(void){}
+void HcalNZSClient::cleanup(void){}
 
-bool HcalTrigPrimClient::hasErrors_Temp(void)
+bool HcalNZSClient::hasErrors_Temp(void)
 {
   if (!ProblemCells)
     {
-      if (debug_>1) std::cout <<"<HcalTrigPrimClient::hasErrors_Temp>  ProblemCells histogram does not exist!"<<std::endl;
+      if (debug_>1) std::cout <<"<HcalNZSClient::hasErrors_Temp>  ProblemCells histogram does not exist!"<<std::endl;
       return false;
     }
   int problemcount=0;
@@ -247,17 +247,17 @@ bool HcalTrigPrimClient::hasErrors_Temp(void)
   return false;
 }
 
-bool HcalTrigPrimClient::hasWarnings_Temp(void){return false;}
-bool HcalTrigPrimClient::hasOther_Temp(void){return false;}
-bool HcalTrigPrimClient::test_enabled(void){return true;}
+bool HcalNZSClient::hasWarnings_Temp(void){return false;}
+bool HcalNZSClient::hasOther_Temp(void){return false;}
+bool HcalNZSClient::test_enabled(void){return true;}
 
 
-void HcalTrigPrimClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& myqual)
+void HcalNZSClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& myqual)
 {
   // This gets called by HcalMonitorClient
   // trigger primitives don't yet contribute to channel status (though they could...)
   // see dead or hot cell code for an example
 
-} //void HcalTrigPrimClient::updateChannelStatus
+} //void HcalNZSClient::updateChannelStatus
 
 

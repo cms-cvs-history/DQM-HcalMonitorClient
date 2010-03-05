@@ -1,18 +1,18 @@
-#ifndef HcalBeamClient_GUARD_H
-#define HcalBeamClient_GUARD_H
+#ifndef HcalNZSClient_GUARD_H
+#define HcalNZSClient_GUARD_H
 
 #include "DQM/HcalMonitorClient/interface/HcalBaseDQClient.h"
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
 
-class HcalBeamClient : public HcalBaseDQClient {
+class HcalNZSClient : public HcalBaseDQClient {
 
  public:
 
   /// Constructors
-  HcalBeamClient(){name_="";};
-  HcalBeamClient(std::string myname);//{ name_=myname;};
-  HcalBeamClient(std::string myname, const edm::ParameterSet& ps);
+  HcalNZSClient(){name_="";};
+  HcalNZSClient(std::string myname);//{ name_=myname;};
+  HcalNZSClient(std::string myname, const edm::ParameterSet& ps);
 
   void analyze(void);
   void calculateProblems(void); // calculates problem histogram contents
@@ -30,7 +30,7 @@ class HcalBeamClient : public HcalBaseDQClient {
   bool test_enabled(void);
   
   /// Destructor
-  ~HcalBeamClient();
+  ~HcalNZSClient();
 
  private:
   int nevts_;

@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/03 20:02:52 $
- * $Revision: 1.69.4.4 $
+ * $Date: 2010/03/04 23:43:52 $
+ * $Revision: 1.69.4.5 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -187,6 +187,8 @@ void HcalHotCellClient::calculateProblems()
 	    ProblemCells->setBinContent(eta+1,phi+1,1.);
 	}
     }
+  FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(ProblemCells);
   return;
 }
 

@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/03 20:02:52 $
- * $Revision: 1.64.2.4 $
+ * $Date: 2010/03/04 23:43:51 $
+ * $Revision: 1.64.2.5 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -202,9 +202,9 @@ void HcalDeadCellClient::calculateProblems()
 	    ProblemCells->setBinContent(eta+1,phi+1,1.);
 	}
     }
-
+  FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(ProblemCells);
   return;
-
 }
 
 void HcalDeadCellClient::beginJob()

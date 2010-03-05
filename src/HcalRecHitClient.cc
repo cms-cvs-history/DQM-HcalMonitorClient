@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/03 20:02:52 $
- * $Revision: 1.47.4.3 $
+ * $Date: 2010/03/04 23:43:52 $
+ * $Revision: 1.47.4.4 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -205,7 +205,10 @@ void HcalRecHitClient::analyze()
 	} // for (int eta=0;eta<OccupancyByDepth->..;++eta)
     } // for (int mydepth=0;...)
 
-
+  FillUnphysicalHEHFBins(*meEnergyByDepth);
+  FillUnphysicalHEHFBins(*meTimeByDepth);
+  FillUnphysicalHEHFBins(*meEnergyThreshByDepth);
+  FillUnphysicalHEHFBins(*meTimeThreshByDepth);
 
   calculateProblems();
 }
@@ -310,7 +313,8 @@ void HcalRecHitClient::calculateProblems()
 	    ProblemCells->setBinContent(eta+1,phi+1,1.);
 	}
     }
-
+  FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(ProblemCells);
   return;
 
 }
