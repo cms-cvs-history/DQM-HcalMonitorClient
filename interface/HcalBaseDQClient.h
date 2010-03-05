@@ -12,8 +12,8 @@
 /*
  * \file HcalBaseDQClient.h
  * 
- * $Date: 2010/03/03 18:32:14 $
- * $Revision: 1.1.2.2 $
+ * $Date: 2010/03/04 23:43:51 $
+ * $Revision: 1.1.2.3 $
  * \author J. Temple
  * \brief Hcal Monitor Client base class
  * based on code in EcalBarrelMonitorClient/interface/EBClient.h
@@ -46,9 +46,10 @@ class HcalBaseDQClient
 
   virtual void htmlOutput(std::string htmlDir);
   virtual void setStatusMap(std::map<HcalDetId, unsigned int>& map);
-    
+  virtual void updateChannelStatus(std::map<HcalDetId, unsigned int>& myqual){};     
+ 
   std::string name(){return name_;};
-
+  // make these private, with public accessors, at some point?
   std::string name_;
   std::string prefixME_;
   std::string subdir_;

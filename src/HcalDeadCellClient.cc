@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/04 23:43:51 $
- * $Revision: 1.64.2.5 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.64.2.6 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -291,7 +291,7 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
 {
   // This gets called by HcalMonitorClient
 
-  if (nevts_<minevents_) return; // not enough events to make judgment; don't create new status file
+  if (enoughevents_==false) return; // not enough events to make judgment; don't create new status file
 
   float binval;
   int ieta=0;
@@ -300,7 +300,6 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
   int phibins=0;
   
   int subdet=0;
-  stringstream subdetname;
   if (debug_>1)
     {
       std::cout <<"<HcalDeadCellClient>  Summary of Dead Cells in Run: "<<std::endl;
@@ -325,31 +324,16 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
 	      if (d<2)
 		{
 		  if (isHB(hist_eta,d+1)) 
-		    {
-		      subdetname <<"HB";
-		      subdet=1;
-		    }
+		      subdet=HcalBarrel;
 		  else if (isHE(hist_eta,d+1)) 
-		    {
-		      subdetname<<"HE";
-		      subdet=2;
-		    }
+		      subdet=HcalEndcap;
 		  else if (isHF(hist_eta,d+1)) 
-		    {
-		      subdetname<<"HF";
-		      subdet=4;
-		    }
+		      subdet=HcalForward;
 		}
 	      else if (d==2) 
-		{
-		  subdetname <<"HE";
-		  subdet=2;
-		}
+		subdet=HcalEndcap;
 	      else if (d==3) 
-		{
-		  subdetname<<"HO";
-		  subdet=3;
-		}
+		subdet=HcalOuter;
 	      // Set correct depth label
 	      
 	      HcalDetId myid((HcalSubdetector)(subdet), ieta, iphi, d+1);
@@ -363,11 +347,9 @@ void HcalDeadCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& 
 	      if (deadcell==1 && debug_>0)
 		std::cout <<"Dead Cell :  subdetector = "<<subdet<<" (eta,phi,depth) = ("<<ieta<<", "<<iphi<<", "<<d+1<<"):  "<<binval*100.<<"%"<<std::endl;
 	      
-	      // DetID not found in quality list; add it.  (This shouldn't happen!)
+	      // DetID not found in quality list; add it.  
 	      if (myqual.find(myid)==myqual.end())
-		{
-		  myqual[myid]=(deadcell<<HcalChannelStatus::HcalCellDead);  // deadcell shifted to bit 6
-		}
+		myqual[myid]=(deadcell<<HcalChannelStatus::HcalCellDead);  // deadcell shifted to bit 6
 	      else
 		{
 		  int mask=(1<<HcalChannelStatus::HcalCellDead);

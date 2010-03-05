@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.92.2.5 $
+ * $Date: 2010/03/05 16:28:20 $
+ * $Revision: 1.92.2.6 $
  * \author J. Temple
  * 
  */
@@ -23,14 +23,17 @@
 #include "FWCore/Framework/interface/MakerMacros.h"
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ServiceRegistry/interface/Service.h"
+#include "FWCore/Framework/interface/ESHandle.h"
+
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include "DQMServices/Core/interface/DQMStore.h"
-#include "FWCore/Framework/interface/ESHandle.h"
 
 #include "CondFormats/HcalObjects/interface/HcalChannelStatus.h"
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 #include "CondFormats/HcalObjects/interface/HcalCondObjectContainer.h"
 #include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
+
+#include "CalibCalorimetry/HcalAlgos/interface/HcalDbASCIIIO.h"
 
 #include <iostream>
 #include <iomanip>
@@ -51,10 +54,12 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   enableCleanup_ = ps.getUntrackedParameter<bool>("enableCleanup", false);
   enabledClients_ = ps.getUntrackedParameter<vector<string> >("enabledClients", enabledClients_);
 
+  updateTime_ = ps.getUntrackedParameter<int>("UpdateTime",0);
   baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
   htmlUpdateTime_ = ps.getUntrackedParameter<int>("htmlUpdateTime", 0);
-  databasedir_   = ps.getUntrackedParameter<std::string>("databasedir","");
+  databasedir_   = ps.getUntrackedParameter<std::string>("databaseDir","");
   databaseUpdateTime_ = ps.getUntrackedParameter<int>("databaseUpdateTime",0);
+  databaseFirstUpdate_ = ps.getUntrackedParameter<int>("databaseFirstUpdate",10);
 
   if (debug_>0)
     {
@@ -111,7 +116,7 @@ void HcalMonitorClient::beginJob(void)
   jevt_=0;
 
   current_time_ = time(NULL);
-  last_time_update_ = current_time_;
+  last_time_html_ = current_time_;
   last_time_db_ = current_time_;
 
   // get hold of back-end interface
@@ -273,6 +278,30 @@ void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const Event
       last_time_update_ = current_time_;
     }
   this->analyze(l.luminosityBlock());
+
+  if (databaseUpdateTime_>0)
+    {
+      if (
+	  // first update occurs at after databaseFirstUpdate_ minutes
+	  (last_time_db_==0 && (current_time_-last_time_db_)>=60*databaseFirstUpdate_)
+	  ||
+	  // following updates follow once every databaseUpdateTime_ minutes
+	  ((current_time_-last_time_db_)>=60*databaseUpdateTime_)
+	  )
+	{
+	  this->writeChannelStatus();
+	  last_time_db_=current_time_;
+	}
+    }
+  if (htmlUpdateTime_>0)
+    {
+      if ((current_time_-last_time_html_)>=60*htmlUpdateTime_) // htmlUpdateTime_ in minutes
+	{
+	  this->writeHtml();
+	  last_time_html_=current_time_;
+	}
+    }
+
 } // void HcalMonitorClient::endLuminosityBlock
 
 void HcalMonitorClient::endRun(void)
@@ -280,10 +309,11 @@ void HcalMonitorClient::endRun(void)
   begin_run_ = false;
   end_run_   = true;
 
-  if (baseHtmlDir_.size()>0)
-    this->writeHtml();
   if (databasedir_.size()>0)
     this->writeChannelStatus();
+  // writeHtml takes longer; run it last 
+  if (baseHtmlDir_.size()>0)
+    this->writeHtml();
 }
 
 void HcalMonitorClient::endRun(const Run& r, const EventSetup& c) 
@@ -318,6 +348,7 @@ void HcalMonitorClient::writeHtml()
 {
   if (debug_>0) std::cout << "Preparing HcalMonitorClient html output ..." << std::endl;
   
+
   // global ROOT style
   gStyle->Reset("Default");
   gStyle->SetCanvasColor(0);
@@ -382,7 +413,53 @@ void HcalMonitorClient::writeHtml()
 
 void HcalMonitorClient::writeChannelStatus()
 {
+  if (databasedir_.size()==0) return;
+  if (debug_>0) std::cout <<"<HcalMonitorClient::writeDBfile>  Writing file for database"<<endl;
 
+  std::map<HcalDetId, unsigned int> myquality; //map of quality flags as reported by each client
+  // Get status from all channels (we need to store all channels in case a bad channel suddenly becomes good)
+  for (std::vector<HcalBaseDQClient*>::size_type i=0;i<clients_.size();++i)
+    clients_[i]->updateChannelStatus(myquality);
+
+  if (debug_>0) std::cout <<"<HcalMonitorClient::writeChannelStatus()>  myquality size = "<<myquality.size()<<endl;
+
+  std::vector<DetId> mydetids = chanquality_->getAllChannels();
+  HcalChannelQuality* newChanQual = new HcalChannelQuality();
+
+  for (unsigned int i=0;i<mydetids.size();++i)
+    {
+      if (mydetids[i].det()!=DetId::Hcal) continue; // not hcal
+      
+      HcalDetId id=mydetids[i];
+      // get original channel status item
+      const HcalChannelStatus* origstatus=chanquality_->getValues(mydetids[i]);
+      // make copy of status
+      HcalChannelStatus* mystatus=new HcalChannelStatus(origstatus->rawId(),origstatus->getValue());
+      // loop over myquality flags
+      if (myquality.find(id)!=myquality.end())
+	{
+	  
+	  // check dead cells
+	  if ((myquality[id]>>HcalChannelStatus::HcalCellDead)&0x1)
+	    mystatus->setBit(HcalChannelStatus::HcalCellDead);
+	  else
+	    mystatus->unsetBit(HcalChannelStatus::HcalCellDead);
+	  // check hot cells
+	  if ((myquality[id]>>HcalChannelStatus::HcalCellHot)&0x1)
+	    mystatus->setBit(HcalChannelStatus::HcalCellHot);
+	  else
+	    mystatus->unsetBit(HcalChannelStatus::HcalCellHot);
+	} // if (myquality.find_...)
+      newChanQual->addValues(*mystatus);
+    } // for (unsigned int i=0;...)
+  
+  //Now dump out to text file
+  std::ostringstream file;
+  databasedir_=databasedir_+"/"; // add extra slash, just in case
+  file <<databasedir_<<"HcalDQMstatus_"<<run_<<".txt";
+  std::ofstream outStream(file.str().c_str());
+  HcalDbASCIIIO::dumpObject (outStream, (*newChanQual));
+  return;
 } // void HcalMonitorClient::writeChannelStatus()
 
 DEFINE_FWK_MODULE(HcalMonitorClient);

@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.69.4.5 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.69.4.6 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -286,7 +286,6 @@ void HcalHotCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
   int phibins=0;
   
   int subdet=0;
-  stringstream subdetname;
   if (debug_>1)
     {
       std::cout <<"<HcalHotCellClient>  Summary of Hot Cells in Run: "<<std::endl;
@@ -311,31 +310,16 @@ void HcalHotCellClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
 	      if (d<2)
 		{
 		  if (isHB(hist_eta,d+1)) 
-		    {
-		      subdetname <<"HB";
-		      subdet=1;
-		    }
+		    subdet=HcalBarrel;
 		  else if (isHE(hist_eta,d+1)) 
-		    {
-		      subdetname<<"HE";
-		      subdet=2;
-		    }
+		    subdet=HcalEndcap;
 		  else if (isHF(hist_eta,d+1)) 
-		    {
-		      subdetname<<"HF";
-		      subdet=4;
-		    }
+		    subdet=HcalForward;
 		}
 	      else if (d==2) 
-		{
-		  subdetname <<"HE";
-		  subdet=2;
-		}
+		subdet=HcalEndcap;
 	      else if (d==3) 
-		{
-		  subdetname<<"HO";
-		  subdet=3;
-		}
+		subdet=HcalOuter;
 	      // Set correct depth label
 	      
 	      HcalDetId myid((HcalSubdetector)(subdet), ieta, iphi, d+1);

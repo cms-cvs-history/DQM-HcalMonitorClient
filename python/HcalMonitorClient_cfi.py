@@ -11,9 +11,10 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                             
                             baseHtmlDir = cms.untracked.string(""),
                             htmlUpdateTime = cms.untracked.int32(0),
-                            databasedir = cms.untracked.string(""),
+                            databaseDir = cms.untracked.string(""),
                             databaseUpdateTime = cms.untracked.int32(0),
-
+                            databaseFirstUpdate = cms.untracked.int32(10), # database updates have a 10 minute offset, if updatetime>0
+                            
                             # each client has a 'minerrror' (double) rate
                             # (minimum fraction of events that must be bad to be considered a problem),
                             # a 'minevents' integer

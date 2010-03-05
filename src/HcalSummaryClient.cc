@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/05 15:04:53 $
- * $Revision: 1.89.2.1 $
+ * $Date: 2010/03/05 16:28:20 $
+ * $Revision: 1.89.2.2 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -80,7 +80,7 @@ void HcalSummaryClient::analyze(int LS)
   enoughevents_=true; // assume we have enough events for all tests to have run
   for (std::vector<HcalBaseDQClient*>::size_type i=0;i<clients_.size();++i)
     {
-      cout <<"CLIENT = "<<clients_[i]->name_<<"  ENOUGH = "<<clients_[i]->enoughevents_<<endl;
+      if (debug_>2) std::cout <<"<HcalSummaryClient::analyze>  CLIENT = "<<clients_[i]->name_<<"  ENOUGH = "<<clients_[i]->enoughevents_<<endl;
       enoughevents_&=clients_[i]->enoughevents_;
       EnoughEvents_->setBinContent(i+1,clients_[i]->enoughevents_);
       {

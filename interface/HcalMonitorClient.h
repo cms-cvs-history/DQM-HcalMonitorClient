@@ -4,8 +4,8 @@
 /*
  * \file HcalMonitorClient.h
  * 
- * $Date: 2010/03/03 17:37:06 $
- * $Revision: 1.45.2.1 $
+ * $Date: 2010/03/04 23:43:51 $
+ * $Revision: 1.45.2.2 $
  * \author J. Temple
  * 
  */
@@ -98,18 +98,19 @@ private:
   std::string prefixME_;
   bool enableCleanup_;
   std::vector<std::string > enabledClients_;
-  
+
+  int updateTime_; // update time for updating histograms 
   std::string baseHtmlDir_;
-  int htmlUpdateTime_;
+  int htmlUpdateTime_; //update time for updating histograms
   std::string databasedir_;
-  int databaseUpdateTime_;
+  int databaseUpdateTime_; //update time for dumping db info (offset by 10 minutes, so that always dump after 10 minutes)
+  int databaseFirstUpdate_; // first update time (in minutes)
 
   // time parameters
   time_t current_time_;
   time_t last_time_update_;
+  time_t last_time_html_;
   time_t last_time_db_;
-  time_t updateTime_;
-  time_t dbUpdateTime_;
 
   std::vector<HcalBaseDQClient*> clients_;  
 
