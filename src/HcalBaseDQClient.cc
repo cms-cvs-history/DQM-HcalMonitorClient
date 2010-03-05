@@ -24,6 +24,9 @@ HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
   enoughevents_=true;
   minerrorrate_=0;
   minevents_=0;
+
+  ProblemCells=0;
+  ProblemCellsByDepth=0;
 }
 
 void HcalBaseDQClient::beginJob()

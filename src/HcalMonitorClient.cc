@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/03 20:02:52 $
- * $Revision: 1.92.2.4 $
+ * $Date: 2010/03/04 23:43:52 $
+ * $Revision: 1.92.2.5 $
  * \author J. Temple
  * 
  */
@@ -13,6 +13,8 @@
 #include "DQM/HcalMonitorClient/interface/HcalRecHitClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDigiClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalBeamClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalNZSClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalSummaryClient.h"
 
 #include "FWCore/Framework/interface/Run.h"
@@ -77,6 +79,11 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
     clients_.push_back(new HcalDigiClient((string)"DigiMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"TrigPrimMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalTrigPrimClient((string)"TrigPrimMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"NZSMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalNZSClient((string)"NZSMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"BeamMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalBeamClient((string)"BeamMonitor",ps));
+
   if (find(enabledClients_.begin(), enabledClients_.end(),"Summary")!=enabledClients_.end())
     summaryClient_ = new HcalSummaryClient((string)"ReportSummaryClient",ps);
   

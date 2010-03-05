@@ -11,8 +11,8 @@
 /*
  * \file HcalNZSClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.16.4.3 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.1.2.1 $
  * \author J. Temple
  * \brief Hcal NZS Client class
  */
@@ -33,7 +33,7 @@ HcalNZSClient::HcalNZSClient(std::string myname, const edm::ParameterSet& ps)
   prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("NZSFolder","NZSMonitor/"); // NZSMonitor
+  subdir_                = ps.getUntrackedParameter<string>("NZSFolder","NZSMonitor_Hcal/"); // NZSMonitor_Hcal/
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -194,16 +194,16 @@ void HcalNZSClient::beginRun(void)
   problemnames_.clear();
 
   // Put the appropriate name of your problem summary here
-  ProblemCells=dqmStore_->book2D(" ProblemTriggerPrimitives",
-				 " Problem Trigger Primitive Rate for all HCAL;ieta;iphi",
+  ProblemCells=dqmStore_->book2D(" ProblemNZS",
+				 " Problem NZS Rate for all HCAL;ieta;iphi",
 				 85,-42.5,42.5,
 				 72,0.5,72.5);
   problemnames_.push_back(ProblemCells->getName());
   if (debug_>1)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
-  dqmStore_->setCurrentFolder(subdir_+"problem_triggerprimitives");
+  dqmStore_->setCurrentFolder(subdir_+"problem_NZS");
   ProblemCellsByDepth = new EtaPhiHists();
-  ProblemCellsByDepth->setup(dqmStore_," Problem Trigger Primitive Rate");
+  ProblemCellsByDepth->setup(dqmStore_," Problem NZS Rate");
   for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
     problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;

@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.90 $
+ * $Date: 2010/03/05 15:04:53 $
+ * $Revision: 1.89.2.1 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -155,6 +155,11 @@ void HcalSummaryClient::analyze(int LS)
 	     int ieta=CalcIeta(eta-1,d+1);
 	     for (int phi=1;phi<=phibins;++phi)
 	       {
+		 // local phi counter is the same as iphi
+		 // for |ieta|>20, iphi%2==0 cells are unphysical; skip 'em
+		 // for |ieta|>39, iphi%4!=3 cells are unphysical
+		 if (abs(ieta)>20 && phi%2==0) continue;
+		 if (abs(ieta)>39 && phi%4!=3) continue;
 		 // loop over all client tests
 		 for (unsigned int cl=0;cl<clients_.size();++cl)
 		   {
@@ -192,7 +197,9 @@ void HcalSummaryClient::analyze(int LS)
 	       }
 	   }
        } // for (int d=0;d<4;++d)
-   } // else (SummaryMapByDepth exists)
+
+     FillUnphysicalHEHFBins(*SummaryMapByDepth);
+  } // else (SummaryMapByDepth exists)
 
  // We've checked all problems; now compute overall status
  int totalcells=0;

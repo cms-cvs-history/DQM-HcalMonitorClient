@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.47.4.4 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.47.4.5 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -47,6 +47,7 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
 						   ps.getUntrackedParameter<double>("minerrorrate",0.05));
   minevents_    = ps.getUntrackedParameter<int>("RecHit_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
+  enoughevents_=false;
   ProblemCellsByDepth=0;
 }
 
@@ -226,6 +227,8 @@ void HcalRecHitClient::calculateProblems()
   // and get totalevents from their underflow bins.
   // No such problem histograms are defined so far.
   
+  enoughevents_=true;
+
   if (totalevents==0)
     return;
 

@@ -11,8 +11,8 @@
 /*
  * \file HcalBeamClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.16.4.3 $
+ * $Date: 2010/03/05 14:53:27 $
+ * $Revision: 1.14.2.1 $
  * \author J. Temple
  * \brief Hcal Beam Monitor Client class
  */
@@ -97,13 +97,16 @@ void HcalBeamClient::calculateProblems()
   me=dqmStore_->get(subdir_+"Lumi/HFlumi_total_deadcells");
   if (me!=0)
     dead=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_,dead,debug_);
+  else if (debug_>0) std::cout <<" <HcalBeamClient::calculateProblems> Unable to get dead cell plot 'HFlumi_total_deadcells"<<std::endl;
   me=dqmStore_->get(subdir_+"Lumi/HFlumi_total_hotcells");
   if (me!=0)
     hot=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_,dead,debug_);
-
+  else if (debug_>0) std::cout <<" <HcalBeamClient::calculateProblems> Unable to get hot cell plot 'HFlumi_total_hotcells"<<std::endl;
   int myieta=0;
   int mydepth=0;
   int myiphi=0;
+
+  enoughevents_=true; // beam client works a little differently, counting only lumi blocks that have enough events to process.  For this reason, let client continue running regardless of lumi blocks processed
 
   if (dead!=0 || hot!=0)
     {
@@ -121,7 +124,6 @@ void HcalBeamClient::calculateProblems()
 	}
       if (totalLumiBlocks<minevents_ || totalLumiBlocks==0)
 	return;
-      enoughevents_=true;
       for (int i=0;i<etabins;++i)
 	{
 	  i<=3 ? myieta = i-36 : myieta=i+29; // separate HFM, HFP
@@ -131,19 +133,26 @@ void HcalBeamClient::calculateProblems()
 	    mydepth=2;
 	  for (int j=0;j<phibins;++j)
 	    {
-	      myiphi=2*j+1;
-	      if (dead!=0 && dead->GetBinContent(i+1,j+1)/totalLumiBlocks<minerrorrate_)
-		problemvalue+=dead->GetBinContent(i+1,j+1)/totalLumiBlocks;
-	      if (hot!=0 &&  dead->GetBinContent(i+1,j+1)/totalLumiBlocks<minerrorrate_)
-		problemvalue+=hot->GetBinContent(i+1,j+1)/totalLumiBlocks;
+	      problemvalue=0;
+	      myiphi=2*j+1; // lumi HF histograms only have 36 bins
+	      if (dead!=0 && dead->GetBinContent(i+1,j+1)*1./totalLumiBlocks>minerrorrate_)
+		{
+		  problemvalue+=dead->GetBinContent(i+1,j+1)*1./totalLumiBlocks;
+		  if (debug_>1) std::cout <<"<HcalBeamClient::calculateProblem>  Dead cell found at ieta = "<<myieta<<" iphi = "<<myiphi<<"  depth = "<<mydepth<<std::endl;
+		}
+	      if (hot!=0 &&  hot->GetBinContent(i+1,j+1)*1./totalLumiBlocks>minerrorrate_)
+		{
+		  problemvalue+=hot->GetBinContent(i+1,j+1)*1./totalLumiBlocks;
+		  if (debug_>1) std::cout <<"<HcalBeamClient::calculateProblem>  hot cell found at ieta = "<<myieta<<" iphi = "<<myiphi<<"  depth = "<<mydepth<<std::endl;
+		}
 	      if (problemvalue==0) continue;
 	      // Search for known bad problems in channel status db
 	      HcalDetId hcalid(HcalForward, myieta, myiphi, mydepth);
 	      if (badstatusmap.find(hcalid)!=badstatusmap.end())
 		problemvalue=999; 	
 	      myieta<0 ?  zside=-1 : zside=1;
-	      ProblemCellsByDepth->depth[mydepth-1]->setBinContent(i+1,j+1,problemvalue);
-	      if (ProblemCells!=0) ProblemCells->Fill(myieta+zside,j+1,problemvalue);
+	      ProblemCellsByDepth->depth[mydepth-1]->Fill(myieta+zside,myiphi,problemvalue);
+	      if (ProblemCells!=0) ProblemCells->Fill(myieta+zside,myiphi,problemvalue);
 	    }
 	}
     }
@@ -195,8 +204,8 @@ void HcalBeamClient::beginRun(void)
 
   // Put the appropriate name of your problem summary here
   if (ProblemCells==0)
-    ProblemCells=dqmStore_->book2D(" ProblemTriggerPrimitives",
-				   " Problem Trigger Primitive Rate for all HCAL;ieta;iphi",
+    ProblemCells=dqmStore_->book2D(" Problem BeamMonitor",
+				   " Problem Beam Monitor Rate for all HCAL;ieta;iphi",
 				   85,-42.5,42.5,
 				   72,0.5,72.5);
   problemnames_.push_back(ProblemCells->getName());
