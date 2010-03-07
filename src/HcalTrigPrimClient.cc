@@ -11,8 +11,8 @@
 /*
  * \file HcalTrigPrimClient.cc
  * 
- * $Date: 2010/03/04 23:43:52 $
- * $Revision: 1.16.4.3 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.16.4.4 $
  * \author J. Temple
  * \brief Hcal Trigger Primitive Client class
  */
@@ -33,7 +33,7 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
   prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("TrigPrimFolder","TrigPrimMonitor/"); // TrigPrimMonitor
+  subdir_                = ps.getUntrackedParameter<string>("TrigPrimFolder","TrigPrimMonitor_Hcal/"); // TrigPrimMonitor
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -43,7 +43,7 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));
   
   minerrorrate_ = ps.getUntrackedParameter<double>("TrigPrim_minerrorrate",
-						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
+						   ps.getUntrackedParameter<double>("minerrorrate",0.001));
   minevents_    = ps.getUntrackedParameter<int>("TrigPrim_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   ProblemCells=0;
@@ -61,8 +61,9 @@ void HcalTrigPrimClient::calculateProblems()
  if (debug_>2) std::cout <<"\t\tHcalTrigPrimClient::calculateProblems()"<<std::endl;
   if(!dqmStore_) return;
   double totalevents=0;
-  int etabins=0, phibins=0, zside=0;
+  int etabins=0, phibins=0;
   double problemvalue=0;
+  enoughevents_=false;  // assume we lack sufficient events until proven otherwise
 
   // Clear away old problems
   if (ProblemCells!=0)
@@ -80,7 +81,27 @@ void HcalTrigPrimClient::calculateProblems()
 	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
     }
-  enoughevents_=true;
+
+  for  (unsigned int d=0;d<ProblemsByDepthZS_->depth.size();++d)
+    {
+      if (ProblemsByDepthZS_->depth[d]!=0) 
+	{
+	  ProblemsByDepthZS_->depth[d]->Reset();
+	  (ProblemsByDepthZS_->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemsByDepthZS_->depth[d]->getTH2F())->SetMinimum(0.);
+	}
+    }
+
+  for  (unsigned int d=0;d<ProblemsByDepthNZS_->depth.size();++d)
+    {
+      if (ProblemsByDepthNZS_->depth[d]!=0) 
+	{
+	  ProblemsByDepthNZS_->depth[d]->Reset();
+	  (ProblemsByDepthNZS_->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemsByDepthNZS_->depth[d]->getTH2F())->SetMinimum(0.);
+	}
+    }
+
   // Get histograms that are used in testing
   // currently none used,
 
@@ -88,65 +109,144 @@ void HcalTrigPrimClient::calculateProblems()
 
   /*
     // This is a sample of how to get a histogram from the task that can then be used for evaluation purposes
-  TH2F* DigiPresentByDepth[i]
-  MonitorElement* me;
-  for (int i=0;i<4;++i)
-    {
-      string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
-      me=dqmStore_->get(s.c_str());
-      DigiPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DigiPresentByDepth[i], debug_);
-    }      
   */
+  MonitorElement* me;
+  TH2F *goodZS=0;
+  TH2F *badZS=0;
+  TH2F* goodNZS=0;
+  TH2F* badNZS=0;
 
+  me=dqmStore_->get(subdir_+"Good TPs_ZS");
+  if (!me && debug_>0)
+    std::cout <<"<HcalTrigPrimClient::calculateProblems>  Could not get histogram named '"<<subdir_<<"Good TPs_ZS'"<<std::endl;
+  else goodZS = HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, goodZS, debug_);
 
-  // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
-  // setting of the underflow bin to 0, and we can plot results as a raw rate between 0-1.
-  
-  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
+  me=dqmStore_->get(subdir_+"Bad TPs_ZS");
+  if (!me && debug_>0)
+    std::cout <<"<HcalTrigPrimClient::calculateProblems>  Could not get histogram named '"<<subdir_<<"Bad TPs_ZS'"<<std::endl;
+  else badZS = HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, badZS, debug_);
+
+  me=dqmStore_->get(subdir_+"noZS/Good TPs_noZS");
+  if (!me && debug_>0)
+    std::cout <<"<HcalTrigPrimClient::calculateProblems>  Could not get histogram named '"<<subdir_<<"noZS/Good TPs_noZS'"<<std::endl;
+  else goodNZS = HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, goodNZS, debug_);
+
+  me=dqmStore_->get(subdir_+"noZS/Bad TPs_noZS");
+  if (!me && debug_>0)
+    std::cout <<"<HcalTrigPrimClient::calculateProblems>  Could not get histogram named '"<<subdir_<<"noZS/Bad TPs_noZS'"<<std::endl;
+  else badNZS = HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, badNZS, debug_);
+
+  // get bin info from good histograms
+  if (goodZS!=0)
     {
-      if (ProblemCellsByDepth->depth[d]==0) continue;
-    
-      //totalevents=DigiPresentByDepth[d]->GetBinContent(0);
-      totalevents=0;
-      if (totalevents==0 || totalevents<minevents_) continue;
-      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
-      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
-      problemvalue=0;
-      for (int eta=0;eta<etabins;++eta)
+      etabins=goodZS->GetNbinsX();
+      phibins=goodZS->GetNbinsY();
+      totalevents=goodNZS->GetBinContent(0);
+    }
+  else if (goodNZS!=0)
+    {
+      etabins=goodNZS->GetNbinsX();
+      phibins=goodNZS->GetNbinsY();
+      totalevents=goodNZS->GetBinContent(0);
+    }
+
+  if (totalevents<minevents_) 
+    {
+      enoughevents_=false;
+      if (debug_>2) std::cout <<"<HcalTrigPrimClient::calculateProblems()>  Not enough events!  events = "<<totalevents<<"  minimum required = "<<minevents_<<std::endl;
+      return;
+    }
+  enoughevents_=true;
+
+  // got good and bad histograms; now let's loop over them
+
+  int ieta=-99, iphi=-99;
+  int badvalZS=0, goodvalZS=0;
+  int badvalNZS=0, goodvalNZS=0;
+  for (int eta=1;eta<=etabins;++eta)
+    {
+      ieta=eta-33; // Patrick's eta-phi maps starts at ieta=-32
+      for (int phi=1;phi<=phibins;++phi)
 	{
-	  int ieta=CalcIeta(eta,d+1);
-	  if (ieta==-9999) continue;
-	  for (int phi=0;phi<phibins;++phi)
+	  badvalZS=0, goodvalZS=0;
+	  badvalNZS=0, goodvalNZS=0;
+	  iphi=phi;
+	  if (badZS!=0) badvalZS=badZS->GetBinContent(eta,phi);
+	  if (badNZS!=0) badvalNZS=badNZS->GetBinContent(eta,phi);
+	  if (badvalZS+badvalNZS==0) continue;
+	  if (goodZS!=0) goodvalZS=goodZS->GetBinContent(eta,phi);
+	  if (goodNZS!=0) goodvalNZS=goodNZS->GetBinContent(eta,phi);
+
+	  if (badvalNZS>0)
 	    {
-	      problemvalue=0;
-	      //if (DigiPresentByDepth[d]!=0 && DigiPresentByDepth[d]->GetBinContent(eta+1,phi+1)==0) problemvalue=totalevents;
-	      if (problemvalue==0) continue;
-	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
-	      problemvalue = min(1.,problemvalue);
-	      
-	      zside=0;
-	      if (isHF(eta,d+1)) // shift ieta by 1 for HF
-		ieta<0 ? zside = -1 : zside = 1;
-
-	      // For problem cells that exceed our allowed rate,
-	      // set the values to -1 if the cells are already marked in the status database
-	      if (problemvalue>minerrorrate_)
+	      problemvalue=badvalNZS*1./(badvalNZS+goodvalNZS);
+	      if (abs(ieta)<29) // Make special case for ieta=16 (HB/HE overlap?)
 		{
-		  HcalSubdetector subdet=HcalEmpty;
-		  if (isHB(eta,d+1))subdet=HcalBarrel;
-		  else if (isHE(eta,d+1)) subdet=HcalEndcap;
-		  else if (isHF(eta,d+1)) subdet=HcalForward;
-		  else if (isHO(eta,d+1)) subdet=HcalOuter;
-		  HcalDetId hcalid(subdet, ieta, phi+1, (int)(d+1));
-		  if (badstatusmap.find(hcalid)!=badstatusmap.end())
-		    problemvalue=999; 		
+		  ProblemsByDepthNZS_->depth[0]->Fill(ieta,iphi,problemvalue);
+		  if (abs(ieta)==28) // TP 28 spans towers 28 and 29
+		    ProblemsByDepthNZS_->depth[0]->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
 		}
-
-	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
-	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
-	    } // loop on phi
-	} // loop on eta
-    } // loop on depth
+	      else
+		{
+		  int newieta=-99;
+		  for (int i=0;i<3;++i)
+		    {
+		      newieta=i+29+3*(abs(ieta)-29)+1; // shift values by 1 for HF in EtaPhiHistsplot
+		      if (ieta<0) newieta*=-1;
+		      ProblemsByDepthNZS_->depth[0]->Fill(newieta,iphi,problemvalue);
+		    }
+		  if (abs(ieta)==32)
+		    ProblemsByDepthNZS_->depth[0]->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		}
+	    } // errors found in NZS;
+	  if (badvalZS>0)
+	    {
+	      problemvalue=badvalZS*1./(badvalZS+goodvalZS);
+	      if (abs(ieta)<29) // Make special case for ieta=16 (HB/HE overlap?)
+		{
+		  ProblemsByDepthZS_->depth[0]->Fill(ieta,iphi,problemvalue);
+		  if (abs(ieta)==28) // TP 28 spans towers 28 and 29
+		    ProblemsByDepthZS_->depth[0]->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
+		}
+	      else
+		{
+		  int newieta=-99;
+		  for (int i=0;i<3;++i)
+			{
+			  newieta=i+29+3*(abs(ieta)-29)+1; // shift values by 1 for HF in EtaPhiHistsplot
+			  if (ieta<0) newieta*=-1;
+			  ProblemsByDepthZS_->depth[0]->Fill(newieta,iphi,problemvalue);
+			}
+		  if (abs(ieta)==32)
+		    ProblemsByDepthZS_->depth[0]->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		}
+	    } // errors found in ZS
+	  if (badvalZS>0 || badvalNZS>0)
+	    {
+	      // Fill overall problem histograms with sum from both ZS & NZS, or ZS only?
+	      problemvalue=(badvalZS+badvalNZS)*1./(badvalZS+badvalNZS+goodvalZS+goodvalNZS);
+	      if (abs(ieta)<29) // Make special case for ieta=16 (HB/HE overlap?)
+		{
+		  ProblemCellsByDepth->depth[0]->Fill(ieta,iphi,problemvalue);
+		  if (abs(ieta)==28) // TP 28 spans towers 28 and 29
+		    ProblemCellsByDepth->depth[0]->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
+		}
+	      else
+		{
+		  int newieta=-99;
+		  for (int i=0;i<3;++i)
+			{
+			  newieta=i+29+3*(abs(ieta)-29)+1; // shift values by 1 for HF in EtaPhiHistsplot
+			  if (ieta<0) newieta*=-1;
+			  ProblemCellsByDepth->depth[0]->Fill(newieta,iphi,problemvalue);
+			}
+		  if (abs(ieta)==32)
+		    ProblemCellsByDepth->depth[0]->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		}
+	    }
+	}
+    } // for (int eta=1;eta<etabins;++eta)
+    
 
   if (ProblemCells==0)
     {
@@ -167,6 +267,8 @@ void HcalTrigPrimClient::calculateProblems()
     }
 
   FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(*ProblemsByDepthZS_);
+  FillUnphysicalHEHFBins(*ProblemsByDepthNZS_);
   FillUnphysicalHEHFBins(ProblemCells);
   return;
 }
@@ -207,6 +309,13 @@ void HcalTrigPrimClient::beginRun(void)
   for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
     problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
+
+  dqmStore_->setCurrentFolder(subdir_+"problem_ZS");
+  ProblemsByDepthZS_  = new EtaPhiHists();
+  ProblemsByDepthZS_->setup(dqmStore_,"ZS Problem Trigger Primitive Rate");
+  dqmStore_->setCurrentFolder(subdir_+"problem_NZS");
+  ProblemsByDepthNZS_ = new EtaPhiHists();
+  ProblemsByDepthNZS_->setup(dqmStore_,"NZS Problem Trigger Primitive Rate");
 }
 
 void HcalTrigPrimClient::endRun(void){analyze();}
