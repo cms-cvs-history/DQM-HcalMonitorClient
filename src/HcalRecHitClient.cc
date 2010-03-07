@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.47.4.5 $
+ * $Date: 2010/03/05 16:28:20 $
+ * $Revision: 1.47.4.6 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -382,15 +382,15 @@ void HcalRecHitClient::beginRun(void)
   meHFEnergyRMS_1D=dqmStore_->book1D("HF_energy_RMS_1D","HF Energy RMS Per RecHit;Energy (GeV)",500,0,5);
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX/rechit_1D_plots/");
-  meHBEnergyThresh_1D=dqmStore_->book1D("HB_energyThresh_1D","HB Average Energy Per RecHit;Energy (GeV)",400,-5,15);
-  meHEEnergyThresh_1D=dqmStore_->book1D("HE_energyThresh_1D","HE Average Energy Per RecHit;Energy (GeV)",400,-5,15);
-  meHOEnergyThresh_1D=dqmStore_->book1D("HO_energyThresh_1D","HO Average Energy Per RecHit;Energy (GeV)",600,-10,20);
-  meHFEnergyThresh_1D=dqmStore_->book1D("HF_energyThresh_1D","HF Average Energy Per RecHit;Energy (GeV)",400,-5,15);
+  meHBEnergyThresh_1D=dqmStore_->book1D("HB_energyThresh_1D","HB Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
+  meHEEnergyThresh_1D=dqmStore_->book1D("HE_energyThresh_1D","HE Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
+  meHOEnergyThresh_1D=dqmStore_->book1D("HO_energyThresh_1D","HO Average Energy Per RecHit Above Threshold;Energy (GeV)",600,-10,20);
+  meHFEnergyThresh_1D=dqmStore_->book1D("HF_energyThresh_1D","HF Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
 
-  meHBEnergyRMSThresh_1D=dqmStore_->book1D("HB_energy_RMSThresh_1D","HB Energy RMS Per RecHit;Energy (GeV)",500,0,5);
-  meHEEnergyRMSThresh_1D=dqmStore_->book1D("HE_energy_RMSThresh_1D","HE Energy RMS Per RecHit;Energy (GeV)",500,0,5);
-  meHOEnergyRMSThresh_1D=dqmStore_->book1D("HO_energy_RMSThresh_1D","HO Energy RMS Per RecHit;Energy (GeV)",500,0,5);
-  meHFEnergyRMSThresh_1D=dqmStore_->book1D("HF_energy_RMSThresh_1D","HF Energy RMS Per RecHit;Energy (GeV)",500,0,5);
+  meHBEnergyRMSThresh_1D=dqmStore_->book1D("HB_energy_RMSThresh_1D","HB Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
+  meHEEnergyRMSThresh_1D=dqmStore_->book1D("HE_energy_RMSThresh_1D","HE Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
+  meHOEnergyRMSThresh_1D=dqmStore_->book1D("HO_energy_RMSThresh_1D","HO Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
+  meHFEnergyRMSThresh_1D=dqmStore_->book1D("HF_energy_RMSThresh_1D","HF Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
 }
 
 void HcalRecHitClient::endRun(void)
