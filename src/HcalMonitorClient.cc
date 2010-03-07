@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.92.2.6 $
+ * $Date: 2010/03/05 18:39:09 $
+ * $Revision: 1.92.2.7 $
  * \author J. Temple
  * 
  */
@@ -244,22 +244,23 @@ void HcalMonitorClient::beginLuminosityBlock(const LuminosityBlock &l, const Eve
 
 void HcalMonitorClient::analyze(const edm::Event & e, const edm::EventSetup & c)
 {
+  if (debug_>4) 
+    std::cout <<"HcalMonitorClient::analyze(const edm::Event&, const edm::EventSetup&) ievt_ = "<<ievt_<<std::endl;
   ievt_++;
   jevt_++;
-  if (debug_>4) std::cout <<"HcalMonitorClient::analyze(const edm::Event&, const edm::EventSetup&) ievt_ = "<<ievt_<<std::endl;
 
   run_=e.id().run();
   evt_=e.id().event();
-  if (prescaleFactor_>0 && jevt_%prescaleFactor_==0) this->analyze();
+  if (prescaleFactor_>0 && jevt_%prescaleFactor_==0) this->analyze(e.luminosityBlock());
 
 } // void HcalMonitorClient::analyze(const edm::Event & e, const edm::EventSetup & c)
 
 void HcalMonitorClient::analyze(int LS)
 {
-  if (debug_>0) std::cout <<"HcalMonitorClient::analyze() "<<std::endl;
+  if (debug_>0)
+    std::cout <<"HcalMonitorClient::analyze() "<<std::endl;
   current_time_ = time(NULL);
-  ievt_++;
-  jevt_++;
+  // no ievt_, jevt_ counters needed here:  this function gets called at endlumiblock, after default analyze function runs
   for (unsigned int i=0;i<clients_.size();++i)
     clients_[i]->analyze();
   if (summaryClient_!=0)
