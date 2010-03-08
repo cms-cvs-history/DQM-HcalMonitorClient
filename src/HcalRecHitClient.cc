@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.47.4.6 $
+ * $Date: 2010/03/07 15:54:27 $
+ * $Revision: 1.47.4.7 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -69,6 +69,7 @@ void HcalRecHitClient::analyze()
 
   MonitorElement* me;
   bool gotHistos=true;
+
   for (int i=0;i<4;++i)
     {
       string s=subdir_+"Distributions_AllRecHits/"+name[i]+"RecHit Occupancy";
@@ -112,6 +113,23 @@ void HcalRecHitClient::analyze()
       return;
     }
 
+  // Clear histograms before re-filling
+  meHBEnergy_1D->Reset();
+  meHBEnergyRMS_1D->Reset();
+  meHEEnergy_1D->Reset();
+  meHEEnergyRMS_1D->Reset();
+  meHOEnergy_1D->Reset();
+  meHOEnergyRMS_1D->Reset();
+  meHFEnergy_1D->Reset();
+  meHFEnergyRMS_1D->Reset();
+  meHBEnergyThresh_1D->Reset();
+  meHBEnergyRMSThresh_1D->Reset();
+  meHEEnergyThresh_1D->Reset();
+  meHEEnergyRMSThresh_1D->Reset();
+  meHOEnergyThresh_1D->Reset();
+  meHOEnergyRMSThresh_1D->Reset();
+  meHFEnergyThresh_1D->Reset();
+  meHFEnergyRMSThresh_1D->Reset();
 
   for (int mydepth=0;mydepth<4;++mydepth)
     {
@@ -170,7 +188,9 @@ void HcalRecHitClient::analyze()
 		      if (validDetId(HcalBarrel, CalcIeta(HcalBarrel, eta, mydepth+1), phi+1, mydepth+1))
 			{
 			  meHBEnergyThresh_1D->Fill(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-			  meHBEnergyRMSThresh_1D->Fill(sqrt(pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)));
+			  double RMS=pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1,phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2);
+			  RMS=pow(fabs(RMS),0.5);
+			  meHBEnergyRMSThresh_1D->Fill(RMS);
 			}
 		    } 
 		  else if (isHE(eta,mydepth+1)) 
@@ -179,7 +199,9 @@ void HcalRecHitClient::analyze()
 			{
 			  
 			  meHEEnergyThresh_1D->Fill(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-			  meHEEnergyRMSThresh_1D->Fill(sqrt(pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)));
+			  double RMS=pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1,phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2);
+			  RMS=pow(fabs(RMS),0.5);
+			  meHEEnergyRMSThresh_1D->Fill(RMS);
 			}
 		    }
 		  else if (isHO(eta,mydepth+1)) 
@@ -187,7 +209,9 @@ void HcalRecHitClient::analyze()
 		      if (validDetId(HcalOuter, CalcIeta(HcalOuter, eta, mydepth+1), phi+1, mydepth+1)) 
 			{
 			  meHOEnergyThresh_1D->Fill(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-			  meHOEnergyRMSThresh_1D->Fill(sqrt(pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)));
+			  double RMS=pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1,phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2);
+			  RMS=pow(fabs(RMS),0.5);
+			  meHOEnergyRMSThresh_1D->Fill(RMS);
 			}
 		    } 
 		  else if (isHF(eta,mydepth+1)) 
@@ -195,7 +219,9 @@ void HcalRecHitClient::analyze()
 		      if (validDetId(HcalForward, CalcIeta(HcalForward, eta, mydepth+1), phi+1, mydepth+1)) 
 			{
 			  meHFEnergyThresh_1D->Fill(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1));
-			  meHFEnergyRMSThresh_1D->Fill(sqrt(pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)));
+			  double RMS=pow(SqrtSumEnergy2ThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1,phi+1)-pow(SumEnergyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1)/OccupancyThreshByDepth[mydepth]->GetBinContent(eta+1, phi+1),2);
+			  RMS=pow(fabs(RMS),0.5);
+			  meHFEnergyRMSThresh_1D->Fill(RMS);		  
 			}
 		    }
 		  // fill 2D plots
@@ -382,15 +408,15 @@ void HcalRecHitClient::beginRun(void)
   meHFEnergyRMS_1D=dqmStore_->book1D("HF_energy_RMS_1D","HF Energy RMS Per RecHit;Energy (GeV)",500,0,5);
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX/rechit_1D_plots/");
-  meHBEnergyThresh_1D=dqmStore_->book1D("HB_energyThresh_1D","HB Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
-  meHEEnergyThresh_1D=dqmStore_->book1D("HE_energyThresh_1D","HE Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
-  meHOEnergyThresh_1D=dqmStore_->book1D("HO_energyThresh_1D","HO Average Energy Per RecHit Above Threshold;Energy (GeV)",600,-10,20);
-  meHFEnergyThresh_1D=dqmStore_->book1D("HF_energyThresh_1D","HF Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,15);
+  meHBEnergyThresh_1D=dqmStore_->book1D("HB_energyThresh_1D","HB Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,35);
+  meHEEnergyThresh_1D=dqmStore_->book1D("HE_energyThresh_1D","HE Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,35);
+  meHOEnergyThresh_1D=dqmStore_->book1D("HO_energyThresh_1D","HO Average Energy Per RecHit Above Threshold;Energy (GeV)",600,-10,50);
+  meHFEnergyThresh_1D=dqmStore_->book1D("HF_energyThresh_1D","HF Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,95);
 
-  meHBEnergyRMSThresh_1D=dqmStore_->book1D("HB_energy_RMSThresh_1D","HB Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
-  meHEEnergyRMSThresh_1D=dqmStore_->book1D("HE_energy_RMSThresh_1D","HE Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
-  meHOEnergyRMSThresh_1D=dqmStore_->book1D("HO_energy_RMSThresh_1D","HO Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
-  meHFEnergyRMSThresh_1D=dqmStore_->book1D("HF_energy_RMSThresh_1D","HF Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,5);
+  meHBEnergyRMSThresh_1D=dqmStore_->book1D("HB_energy_RMSThresh_1D","HB Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,10);
+  meHEEnergyRMSThresh_1D=dqmStore_->book1D("HE_energy_RMSThresh_1D","HE Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,10);
+  meHOEnergyRMSThresh_1D=dqmStore_->book1D("HO_energy_RMSThresh_1D","HO Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,10);
+  meHFEnergyRMSThresh_1D=dqmStore_->book1D("HF_energy_RMSThresh_1D","HF Energy RMS Per RecHit Above Threshold;Energy (GeV)",500,0,20);
 }
 
 void HcalRecHitClient::endRun(void)

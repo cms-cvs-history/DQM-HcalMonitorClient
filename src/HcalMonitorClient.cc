@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/07 14:56:57 $
- * $Revision: 1.92.2.8 $
+ * $Date: 2010/03/08 07:46:21 $
+ * $Revision: 1.92.2.9 $
  * \author J. Temple
  * 
  */
@@ -158,7 +158,7 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
  
   if (dqmStore_ && ChannelStatus==0)
     {
-      dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
+      dqmStore_->setCurrentFolder(prefixME_+"HcalInfo/ChannelStatus");
       ChannelStatus=new EtaPhiHists;
       ChannelStatus->setup(dqmStore_,"ChannelStatus");
       stringstream x;
