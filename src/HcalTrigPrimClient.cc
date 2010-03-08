@@ -11,8 +11,8 @@
 /*
  * \file HcalTrigPrimClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.16.4.4 $
+ * $Date: 2010/03/07 18:17:48 $
+ * $Revision: 1.16.4.5 $
  * \author J. Temple
  * \brief Hcal Trigger Primitive Client class
  */
@@ -224,24 +224,39 @@ void HcalTrigPrimClient::calculateProblems()
 	  if (badvalZS>0 || badvalNZS>0)
 	    {
 	      // Fill overall problem histograms with sum from both ZS & NZS, or ZS only?
-	      problemvalue=(badvalZS+badvalNZS)*1./(badvalZS+badvalNZS+goodvalZS+goodvalNZS);
+	      //problemvalue=(badvalZS+badvalNZS)*1./(badvalZS+badvalNZS+goodvalZS+goodvalNZS);
+	      
+	      // Update on 8 March -- NZS shows lots of errors; let's not include that in problem cells just yet
+	      problemvalue=(badvalZS*1.)/(badvalZS+goodvalZS);
+	      if (problemvalue==0) continue;
 	      if (abs(ieta)<29) // Make special case for ieta=16 (HB/HE overlap?)
 		{
 		  ProblemCellsByDepth->depth[0]->Fill(ieta,iphi,problemvalue);
+		  ProblemCells->Fill(ieta,iphi,problemvalue);
 		  if (abs(ieta)==28) // TP 28 spans towers 28 and 29
-		    ProblemCellsByDepth->depth[0]->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
+		    {
+		      ProblemCellsByDepth->depth[0]->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
+		      ProblemCells->Fill(ieta+abs(ieta)/ieta,iphi,problemvalue);
+		    }
 		}
 	      else
 		{
 		  int newieta=-99;
+		  // FIXME:
+		  // iphi seems to start at 1 in Patrick's plots, continues mod 4;
+		  // adjust in far-forward region, where cells start at iphi=3?  Check with Patrick.
 		  for (int i=0;i<3;++i)
 			{
 			  newieta=i+29+3*(abs(ieta)-29)+1; // shift values by 1 for HF in EtaPhiHistsplot
 			  if (ieta<0) newieta*=-1;
 			  ProblemCellsByDepth->depth[0]->Fill(newieta,iphi,problemvalue);
+			  ProblemCells->Fill(newieta,iphi,problemvalue);
 			}
 		  if (abs(ieta)==32)
-		    ProblemCellsByDepth->depth[0]->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		    {
+		      ProblemCellsByDepth->depth[0]->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		      ProblemCells->Fill(42*abs(ieta)/ieta,iphi,problemvalue);
+		    }
 		}
 	    }
 	}

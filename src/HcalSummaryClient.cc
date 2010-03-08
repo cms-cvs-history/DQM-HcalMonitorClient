@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/05 18:39:09 $
- * $Revision: 1.89.2.3 $
+ * $Date: 2010/03/08 07:46:21 $
+ * $Revision: 1.89.2.4 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -515,6 +515,8 @@ void HcalSummaryClient::beginRun(void)
   status_HO0_=-1;
   status_HO12_=-1;
   status_HFlumi_=-1;
+  for (int i=1;i<=(reportMap_->getTH2F())->GetNbinsX();++i)
+    reportMap_->setBinContent(i,1,-1);
 } // void HcalSummaryClient::beginRun(void)
 
 
