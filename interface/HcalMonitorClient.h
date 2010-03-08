@@ -4,8 +4,8 @@
 /*
  * \file HcalMonitorClient.h
  * 
- * $Date: 2010/03/04 23:43:51 $
- * $Revision: 1.45.2.2 $
+ * $Date: 2010/03/05 18:39:08 $
+ * $Revision: 1.45.2.3 $
  * \author J. Temple
  * 
  */
@@ -119,6 +119,7 @@ private:
 
   HcalSummaryClient* summaryClient_;
   EtaPhiHists* ChannelStatus;
+
 };
 
 #endif
