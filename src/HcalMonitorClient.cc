@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/08 07:46:21 $
- * $Revision: 1.92.2.9 $
+ * $Date: 2010/03/08 19:57:11 $
+ * $Revision: 1.92.2.10 $
  * \author J. Temple
  * 
  */
@@ -11,6 +11,7 @@
 #include "DQM/HcalMonitorClient/interface/HcalDeadCellClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalHotCellClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalRecHitClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalRawDataClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDigiClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalTrigPrimClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalBeamClient.h"
@@ -82,6 +83,8 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
     clients_.push_back(new HcalRecHitClient((string)"RecHitMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DigiMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalDigiClient((string)"DigiMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"RawDataMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalRawDataClient((string)"RawDataMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"TrigPrimMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalTrigPrimClient((string)"TrigPrimMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"NZSMonitor")!=enabledClients_.end())
