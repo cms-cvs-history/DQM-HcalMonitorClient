@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.89.2.2 $
+ * $Date: 2010/03/05 18:39:09 $
+ * $Revision: 1.89.2.3 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -417,7 +417,7 @@ void HcalSummaryClient::beginRun(void)
   if (me) dqmStore_->removeElement(me->getName());
 
   if (EnoughEvents_==0)
-    EnoughEvents_=dqmStore_->book1D("EnoughEvents","Enough Events Passed From Each Task To Form Summary?",1+(int)clients_.size(),0,1+(int)clients_.size());
+    EnoughEvents_=dqmStore_->book1D("EnoughEvents","Enough Events Passed From Each Task To Form Summary",1+(int)clients_.size(),0,1+(int)clients_.size());
   for (std::vector<HcalBaseDQClient*>::size_type i=0;i<clients_.size();++i)
     EnoughEvents_->setBinLabel(i+1,clients_[i]->name());
   EnoughEvents_->setBinLabel(1+(int)clients_.size(),"Summary");

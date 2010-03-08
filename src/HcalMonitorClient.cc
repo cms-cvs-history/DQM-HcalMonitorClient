@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/05 18:39:09 $
- * $Revision: 1.92.2.7 $
+ * $Date: 2010/03/07 14:56:57 $
+ * $Revision: 1.92.2.8 $
  * \author J. Temple
  * 
  */
@@ -400,6 +400,17 @@ void HcalMonitorClient::writeHtml()
     }
 
   // Add call to reportSummary html output
+  if (summaryClient_)
+    {
+      summaryClient_->htmlOutput(htmlDir);
+      htmlFile << "<table border=0 WIDTH=\"50%\"><tr>" << std::endl;
+      htmlFile << "<td WIDTH=\"35%\"><a href=\"" << summaryClient_->name_ << ".html"<<"\">"<<summaryClient_->name_<<"</a></td>" << std::endl;
+      if(summaryClient_->hasErrors_Temp()) htmlFile << "<td bgcolor=red align=center>This monitor task has errors.</td>" << std::endl;
+      else if(summaryClient_->hasWarnings_Temp()) htmlFile << "<td bgcolor=yellow align=center>This monitor task has warnings.</td>" << std::endl;
+      else if(summaryClient_->hasOther_Temp()) htmlFile << "<td bgcolor=aqua align=center>This monitor task has messages.</td>" << std::endl;
+      else htmlFile << "<td bgcolor=lime align=center>This monitor task has no problems</td>" << std::endl;
+      htmlFile << "</tr></table>" << std::endl;
+    }
 
   htmlFile << "</ul>" << std::endl;
 
