@@ -6,13 +6,17 @@
 #include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
 #include "CondFormats/HcalObjects/interface/HcalCondObjectContainer.h"
 
+#include "FWCore/Framework/interface/ESHandle.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbService.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
+
 #include <iostream>
 
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/08 09:30:23 $
- * $Revision: 1.2 $
+ * $Date: 2010/03/08 23:24:42 $
+ * $Revision: 1.1.2.1 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -91,7 +95,7 @@ void HcalRawDataClient::calculateProblems()
 	}
     }
   enoughevents_=true;
-  normalizeHardwareSpaceHistos();
+  getHardwareSpaceHistos();
   std::vector<std::string> name = HcalEtaPhiHistNames();
 
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
@@ -177,8 +181,55 @@ void HcalRawDataClient::beginJob()
 }
 void HcalRawDataClient::endJob(){}
 
+void HcalRawDataClient::stashHDI(int thehash, HcalDetId thehcaldetid) {
+  //Let's not allow indexing off the array...
+  if ((thehash<0)||(thehash>(NUMDCCS*NUMSPGS*HTRCHANMAX)))return;
+  //...but still do the job requested.
+  hashedHcalDetId_[thehash] = thehcaldetid;
+}
+
+
 void HcalRawDataClient::beginRun(void)
 {
+  edm::ESHandle<HcalDbService> pSetup;
+  if (!c) return;
+  c->get<HcalDbRecord>().get( pSetup );
+
+  readoutMap_=pSetup->getHcalMapping();
+  DetId detid_;
+  HcalDetId hcaldetid_; 
+
+  // Build a map of readout hardware unit to calorimeter channel
+  std::vector <HcalElectronicsId> AllElIds = readoutMap_->allElectronicsIdPrecision();
+  uint32_t itsdcc    =0;
+  uint32_t itsspigot =0;
+  uint32_t itshtrchan=0;
+  
+  // by looping over all precision (non-trigger) items.
+  for (std::vector <HcalElectronicsId>::iterator eid = AllElIds.begin();
+       eid != AllElIds.end();
+       eid++) {
+
+    //Get the HcalDetId from the HcalElectronicsId
+    detid_ = readoutMap_->lookup(*eid);
+    // NULL if illegal; ignore
+    if (!detid_.null()) {
+      if (detid_.det()!=4) continue; //not Hcal
+      if (detid_.subdetId()!=HcalBarrel &&
+	  detid_.subdetId()!=HcalEndcap &&
+	  detid_.subdetId()!=HcalOuter  &&
+	  detid_.subdetId()!=HcalForward) continue;
+
+      itsdcc    =(uint32_t) eid->dccid(); 
+      itsspigot =(uint32_t) eid->spigot();
+      itshtrchan=(uint32_t) eid->htrChanId();
+      hcaldetid_ = HcalDetId(detid_);
+      stashHDI(hashup(itsdcc,itsspigot,itshtrchan),
+	       hcaldetid_);
+    } // if (!detid_.null()) 
+  } 
+
+
   enoughevents_=false;
   if (!dqmStore_) 
     {
@@ -255,34 +306,51 @@ void HcalRawDataClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
 } //void HcalRawDataClient::updateChannelStatus
 
 
-void HcalRawDataClient::getHistosToNormalize(void){
+void HcalRawDataClient::getHardwareSpaceHistos(void){
   MonitorElement* me;
   string s;
+
+  s=subdir_+"Corruption/01 Common Data Format violations";
+  me=dqmStore_->get(s.c_str());  
+  meCDFErrorFound_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meCDFErrorFound_, debug_);
+  if (!meCDFErrorFound_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+
+  s=subdir_+"Corruption/02 DCC Event Format violation";
+  me=dqmStore_->get(s.c_str());  
+  meDCCEventFormatError_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meDCCEventFormatError_, debug_);
+  if (!meDCCEventFormatError_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+
+  s=subdir_+"Corruption/03 OrN Inconsistent - HTR vs DCC";
+  me=dqmStore_->get(s.c_str());  
+  meOrNSynch_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meOrNSynch_, debug_);
+  if (!meOrNSynch_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+
+  s=subdir_+"Corruption/05 BCN Inconsistent - HTR vs DCC";
+  me=dqmStore_->get(s.c_str());  
+  meBCNSynch_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meBCNSynch_, debug_);
+  if (!meBCNSynch_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+
+  s=subdir_+"Corruption/06 EvN Inconsistent - HTR vs DCC";
+  me=dqmStore_->get(s.c_str());  
+  meEvtNumberSynch_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meEvtNumberSynch_, debug_);
+  if (!meEvtNumberSynch_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+
   s=subdir_+"Corruption/07 LRB Data Corruption Indicators";
   me=dqmStore_->get(s.c_str());  
   LRBDataCorruptionIndicators_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, LRBDataCorruptionIndicators_, debug_);
   if (!LRBDataCorruptionIndicators_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
-  //  if (LRBDataCorruptionIndicators_)
-  //    LRBDataCorruptionIndicators_->SetBinContent(0,0,ievt_);
 
   s=subdir_+"Corruption/08 Half-HTR Data Corruption Indicators";
   me=dqmStore_->get(s.c_str());  
   HalfHTRDataCorruptionIndicators_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HalfHTRDataCorruptionIndicators_, debug_);
   if (!HalfHTRDataCorruptionIndicators_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
-  //  if (HalfHTRDataCorruptionIndicators_)
-  //    HalfHTRDataCorruptionIndicators_->SetBinContent(0,0,ievt_);
-
-  s=subdir_+"Data Flow/01 Data Flow Indicators";
-  me=dqmStore_->get(s.c_str());  
-  DataFlowInd_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DataFlowInd_, debug_);
-  if (!DataFlowInd_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
-  //  if (DataFlowInd_)
-  //    DataFlowInd_->SetBinContent(0,0,ievt_);
 
   s=subdir_+"Corruption/09 Channel Integrity Summarized by Spigot";
   me=dqmStore_->get(s.c_str());  
   ChannSumm_DataIntegrityCheck_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, ChannSumm_DataIntegrityCheck_, debug_);
   if (!ChannSumm_DataIntegrityCheck_ & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+  if (ChannSumm_DataIntegrityCheck_)
+    ChannSumm_DataIntegrityCheck_->SetMinimum(0);
 
   char chararray[150];
   for (int i=0; i<NUMDCCS; i++) {
@@ -291,54 +359,19 @@ void HcalRawDataClient::getHistosToNormalize(void){
     me=dqmStore_->get(s.c_str());  
     Chann_DataIntegrityCheck_[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, Chann_DataIntegrityCheck_[i], debug_);
     if (!Chann_DataIntegrityCheck_[i] & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;
+    if (Chann_DataIntegrityCheck_[i])
+      Chann_DataIntegrityCheck_[i]->SetMinimum(0);
   }
 }
 void HcalRawDataClient::normalizeHardwareSpaceHistos(void){
   // Get histograms that are used in testing
-  getHistosToNormalize();
+  getHardwareSpaceHistos();
 
   int fed2offset=0;
-  int fed3offset=0;
   int spg2offset=0;
-  int spg3offset=0;
   int chn2offset=0;
   float tsFactor=1.0;
   float val=0.0;
-
-  //Normalize everything by nevts_
-  for (int fednum=0; fednum<NUMDCCS; fednum++) {
-    fed3offset = 1 + (4*fednum); //3 bins, plus one of margin, each DCC
-    fed2offset = 1 + (3*fednum); //2 bins, plus one of margin, each DCC
-    for (int spgnum=0; spgnum<15; spgnum++) {
-      spg3offset = 1 + (4*spgnum); //3 bins, plus one of margin, each spigot
-      for (int xbin=1; xbin<=3; xbin++) {
-	for (int ybin=1; ybin<=3; ybin++) {
-	  if (!LRBDataCorruptionIndicators_) continue;
-	  val = LRBDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
-							    spg3offset+ybin);
-	  if (val) 
-	    LRBDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
-							spg3offset+ybin,
-							(float)val);
-	  if (!HalfHTRDataCorruptionIndicators_) continue;
-	  val = HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
-								spg3offset+ybin);
-	  if (val) {
-	    HalfHTRDataCorruptionIndicators_->SetBinContent(fed3offset+xbin,
-							    spg3offset+ybin,
-							    (float)val );
-	  }
-	  if (!DataFlowInd_ || xbin>2) continue;  //DataFlowInd_;  2x by 3y
-	  val = DataFlowInd_->GetBinContent(fed2offset+xbin,
-					    spg3offset+ybin);
-	  if (val) 
-	    DataFlowInd_->SetBinContent(fed2offset+xbin,
-					spg3offset+ybin,	
-					( (float)val ));
-	}
-      }
-    }
-  }
 
   if (!ChannSumm_DataIntegrityCheck_) return;
   //Normalize by the number of events each channel spake. (Handles ZS!)
