@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/07 15:54:27 $
- * $Revision: 1.47.4.7 $
+ * $Date: 2010/03/08 19:57:16 $
+ * $Revision: 1.47.4.8 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -389,12 +389,34 @@ void HcalRecHitClient::beginRun(void)
   meEnergyByDepth->setup(dqmStore_,"RecHit Average Energy","GeV");
   meTimeByDepth = new EtaPhiHists();
   meTimeByDepth->setup(dqmStore_,"RecHit Average Time","nS");
+  // set all average times to -1000 by default (so that they don't show up on plots
+  for (unsigned int i=0;i<meTimeByDepth->depth.size();++i)
+    {
+      (meTimeByDepth->depth[i]->getTH2F())->SetMinimum(-150);
+      (meTimeByDepth->depth[i]->getTH2F())->SetMaximum(150);
+      int etabins=(meTimeByDepth->depth[i]->getTH2F())->GetNbinsX();
+      int phibins=(meTimeByDepth->depth[i]->getTH2F())->GetNbinsY();
+      for (int x=1;x<=etabins;++x)
+	for (int y=1;y<=phibins;++y)
+	  meTimeByDepth->depth[i]->setBinContent(x,y,-1000);
+    }
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX");
   meEnergyThreshByDepth = new EtaPhiHists();
   meEnergyThreshByDepth->setup(dqmStore_,"Above Threshold RecHit Average Energy","GeV");
   meTimeThreshByDepth = new EtaPhiHists();
   meTimeThreshByDepth->setup(dqmStore_,"Above Threshold RecHit Average Time","nS");
+ // set all average times to -1000 by default (so that they don't show up on plots
+  for (unsigned int i=0;i<meTimeThreshByDepth->depth.size();++i)
+    {
+      (meTimeThreshByDepth->depth[i]->getTH2F())->SetMinimum(-150);
+      (meTimeThreshByDepth->depth[i]->getTH2F())->SetMaximum(150);
+      int etabins=(meTimeThreshByDepth->depth[i]->getTH2F())->GetNbinsX();
+      int phibins=(meTimeThreshByDepth->depth[i]->getTH2F())->GetNbinsY();
+      for (int x=1;x<=etabins;++x)
+	for (int y=1;y<=phibins;++y)
+	  meTimeThreshByDepth->depth[i]->setBinContent(x,y,-1000);
+    }
 
   dqmStore_->setCurrentFolder(subdir_+"Distributions_AllRecHits/rechit_1D_plots/");
   meHBEnergy_1D=dqmStore_->book1D("HB_energy_1D","HB Average Energy Per RecHit;Energy (GeV)",400,-5,15);

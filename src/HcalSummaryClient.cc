@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/08 07:46:21 $
- * $Revision: 1.89.2.4 $
+ * $Date: 2010/03/08 10:34:47 $
+ * $Revision: 1.89.2.5 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -161,6 +161,9 @@ void HcalSummaryClient::analyze(int LS)
 		 if (abs(ieta)>20 && phi%2==0) continue;
 		 if (abs(ieta)>39 && phi%4!=3) continue;
 		 // loop over all client tests
+		 
+		 // SummaryMapByDepth is slightly different from previous version -- it now just shows cells
+		 // that contribute as "problems", rather than giving good channels a status of 1, and bad a status of 0
 		 for (unsigned int cl=0;cl<clients_.size();++cl)
 		   {
 		     // Best way to handle this?  
@@ -175,7 +178,7 @@ void HcalSummaryClient::analyze(int LS)
 			 if ((clients_[cl]->ProblemCellsByDepth)->depth[d]->getBinContent(eta,phi)<999)
 			   SummaryMapByDepth->depth[d]->setBinContent(eta,phi,1);
 			 else 
-			   SummaryMapByDepth->depth[d]->setBinContent(eta,phi,2); // known problems filled with a value of 2
+			   SummaryMapByDepth->depth[d]->setBinContent(eta,phi,999); // known problems filled with a value of 999
 			 if (isHF(eta-1,d+1)) 
 			   {
 			     ++status_HF_;
