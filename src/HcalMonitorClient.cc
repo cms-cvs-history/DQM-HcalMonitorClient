@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/08 19:57:11 $
- * $Revision: 1.92.2.10 $
+ * $Date: 2010/03/08 23:43:06 $
+ * $Revision: 1.92.2.11 $
  * \author J. Temple
  * 
  */
@@ -199,6 +199,7 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
     
   for (unsigned int i=0;i<clients_.size();++i)
     {
+      if (clients_[i]->name()=="RawDataClient") clients_[i]->setEventSetup(c);
       clients_[i]->beginRun();
       clients_[i]->setStatusMap(badchannelmap);
     }
