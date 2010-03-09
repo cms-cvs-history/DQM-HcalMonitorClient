@@ -199,7 +199,7 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
     
   for (unsigned int i=0;i<clients_.size();++i)
     {
-      if (clients_[i]->name()=="RawDataClient") clients_[i]->setEventSetup(c);
+      if (clients_[i]->name()=="RawDataMonitor") clients_[i]->setEventSetup(c);
       clients_[i]->beginRun();
       clients_[i]->setStatusMap(badchannelmap);
     }
