@@ -6,7 +6,7 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                             mergeRuns=cms.untracked.bool(False),
                             cloneME=cms.untracked.bool(False),
                             prescaleFactor=cms.untracked.int32(-1),
-                            prefixME=cms.untracked.string("Hcal/"),
+                            subSystemFolder=cms.untracked.string("Hcal/"),
                             enableCleanup=cms.untracked.bool(False),
                             
                             baseHtmlDir = cms.untracked.string(""),
@@ -30,8 +30,9 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                             # BadChannelStatusMask = cms.untracked.int32(0),
 
                             # dead cell min events controlled by task in online running
-                            #DeadCell_minerrorrate = cms.untracked.double(0.25),
+                            DeadCell_minerrorrate = cms.untracked.double(0.25),
                             #DeadCell_minevents    = cms.untracked.int32(10),
+                            HotCell_minerrrorate  = cms.untracked.double(0.25),
                             
                             # Specify all clients to be run (name = prefix+"Monitor")
 
@@ -43,6 +44,10 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                                                                     "TrigPrimMonitor",
                                                                     "NZSMonitor",
                                                                     "BeamMonitor",
+                                                                    "DetDiagPedestalMonitor",
+                                                                    "DetDiagLaserMonitor",
+                                                                    "DetDiagLEDMonitor",
+                                                                    "DetDiagNoiseMonitor",
                                                                     "Summary"
                                                                     ]
                                                                    ),
