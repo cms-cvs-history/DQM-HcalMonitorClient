@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/08 23:24:42 $
- * $Revision: 1.1.2.1 $
+ * $Date: 2010/03/10 04:17:29 $
+ * $Revision: 1.1.2.3 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -78,6 +78,11 @@ void HcalRawDataClient::calculateProblems()
   double totalevents=0;
   int etabins=0, phibins=0, zside=0;
   double problemvalue=0;
+  int filleta=-9999;
+  //Get number of events to normalize by
+  MonitorElement* me;
+  me = dqmStore_->get(subdir_+"Events_Processed_Task_Histogram");
+  if (me) totalevents=me->getBinContent(1);
 
   // Clear away old problems
   if (ProblemCells!=0)
@@ -109,8 +114,6 @@ void HcalRawDataClient::calculateProblems()
     {
       if (ProblemCellsByDepth->depth[d]==0) continue;
     
-      //totalevents=DigiPresentByDepth[d]->GetBinContent(0);
-      totalevents=0;
       if (totalevents==0 || totalevents<minevents_) continue;
       etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
       phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
@@ -122,7 +125,17 @@ void HcalRawDataClient::calculateProblems()
 	  for (int phi=0;phi<phibins;++phi)
 	    {
 	      problemvalue=0;
-	      //if (DigiPresentByDepth[d]!=0 && DigiPresentByDepth[d]->GetBinContent(eta+1,phi+1)==0) problemvalue=totalevents;
+	      problemvalue=((uint64_t) problemcount[eta][phi][d] );
+	      if (problemvalue==0) continue;
+	      filleta=CalcIeta(eta,d+1); // calculate ieta from eta counter
+	      // Offset true ieta for HF plotting
+	      if (isHF(eta,d+1)) 
+		filleta<0 ? filleta-- : filleta++;
+	      if (debug_>0) cout <<"problemvalue = "<<problemvalue<<"  ieta = "<<filleta<<"  iphi = "<<phi+1<<"  d = "<<d+1<<endl;
+	      ProblemCellsByDepth->depth[d]->Fill(filleta,phi+1,problemvalue);
+		ProblemCells->Fill(filleta,phi+1,problemvalue); 
+
+
 	      if (problemvalue==0) continue;
 	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
 	      problemvalue = min(1.,problemvalue);
@@ -468,7 +481,7 @@ void HcalRawDataClient::fillProblemCountArray(void){
 	    CRweight = (1.0 / (tsFactor-1.0));
 	    Erweight = (1.0 / (tsFactor    ));
 	  }
-	  int xbin=1; int ybin=1; // Number of timeslices wrong here
+	  int xbin=1; int ybin=1; // Timeslices per event check for error here
 	  n += Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
 							      spg2offset+ybin);
 	  xbin=2; //move right one bin: CapID Rotation here
@@ -560,10 +573,11 @@ void HcalRawDataClient::mapChannproblem(int dcc, int spigot, int htrchan, float 
   if (myeta>=0 && myeta<85 &&
       (myphi-1)>=0 && (myphi-1)<72 &&
       (mydepth-1)>=0 && (mydepth-1)<4){
-    if (problemcount[myeta][myphi-1][mydepth-1]< n)
+    if (problemcount[myeta][myphi-1][mydepth-1]< n) {
       problemcount[myeta][myphi-1][mydepth-1]=n;
-    if (debug_>0)
-      cout<<" mapChannproblem found error! "<<HDI.subdet()<<"("<<HDI.ieta()<<", "<<HDI.iphi()<<", "<<HDI.depth()<<")"<<endl;
+      if (debug_>0)
+	cout<<" mapChannproblem found error! "<<HDI.subdet()<<"("<<HDI.ieta()<<", "<<HDI.iphi()<<", "<<HDI.depth()<<")"<<endl;
+    }
   }
 }   // void HcalRawDataClient::mapChannproblem(...)
 
