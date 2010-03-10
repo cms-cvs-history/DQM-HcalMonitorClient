@@ -1,10 +1,5 @@
 #ifndef HcalRawDataClient_GUARD_H
 #define HcalRawDataClient_GUARD_H
-#define DEPTHBINS      4
-#define  IETAMIN     -43
-#define  IETAMAX      43
-#define  IPHIMIN       0
-#define  IPHIMAX      71
 #define  NUMDCCS      32
 #define  NUMSPGS     15
 #define  HTRCHANMAX   24
@@ -67,11 +62,18 @@ class HcalRawDataClient : public HcalBaseDQClient {
   TH2F*  LRBDataCorruptionIndicators_;
   TH2F*  HalfHTRDataCorruptionIndicators_;
   TH2F*  DataFlowInd_;
-  TH2F*  ChannSumm_DataIntegrityCheck_;
+  TH2F*  ChannSumm_DataIntegrityCheck_;    
   // handy array of pointers to pointers...
   TH2F* Chann_DataIntegrityCheck_[NUMDCCS];
 
   void getHardwareSpaceHistos(void);
+
+  void fillProblemCountArray(void);
+  uint64_t problemcount[85][72][4]; // HFd1,2 at 'depths' 3,4 to avoid collision with HE
+  void mapDCCproblem  (int dcc, float n) ;                         // Take maximum problem counters for affected cells
+  void mapHTRproblem  (int dcc, int spigot, float n) ;             // Take maximum problem counters for affected cells
+  void mapChannproblem(int dcc, int spigot, int htrchan, float n); // Take maximum problem counters for affected cell.
+
   void normalizeHardwareSpaceHistos(void);
 };
 

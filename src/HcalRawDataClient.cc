@@ -9,6 +9,7 @@
 #include "FWCore/Framework/interface/ESHandle.h"
 #include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 #include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
+#include "DataFormats/FEDRawData/interface/FEDNumbering.h"
 
 #include <iostream>
 
@@ -67,7 +68,7 @@ void HcalRawDataClient::endLuminosityBlock() {
 void HcalRawDataClient::analyze()
 {
   if (debug_>2) std::cout <<"\tHcalRawDataClient::analyze()"<<std::endl;
-  //  calculateProblems();
+  calculateProblems();
 }
 
 void HcalRawDataClient::calculateProblems()
@@ -95,7 +96,10 @@ void HcalRawDataClient::calculateProblems()
 	}
     }
   enoughevents_=true;
-  getHardwareSpaceHistos();
+  //Get the plots showing raw data errors,
+  //fill problemcount[][][] 
+  fillProblemCountArray();
+
   std::vector<std::string> name = HcalEtaPhiHistNames();
 
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
@@ -191,10 +195,11 @@ void HcalRawDataClient::stashHDI(int thehash, HcalDetId thehcaldetid) {
 
 void HcalRawDataClient::beginRun(void)
 {
+  if (debug_>2) std::cout <<"<HcalRawDataClient::beginRun>"<<std::endl;
   edm::ESHandle<HcalDbService> pSetup;
-  if (!c) return;
   c->get<HcalDbRecord>().get( pSetup );
 
+  if (debug_>2) std::cout <<"\t<HcalRawDataClient::beginRun> Get Hcal mapping"<<std::endl;
   readoutMap_=pSetup->getHcalMapping();
   DetId detid_;
   HcalDetId hcaldetid_; 
@@ -205,6 +210,7 @@ void HcalRawDataClient::beginRun(void)
   uint32_t itsspigot =0;
   uint32_t itshtrchan=0;
   
+  if (debug_>2) std::cout <<"\t<HcalRawDataClient::beginRun> Loop over AllEIds"<<std::endl;
   // by looping over all precision (non-trigger) items.
   for (std::vector <HcalElectronicsId>::iterator eid = AllElIds.begin();
        eid != AllElIds.end();
@@ -229,6 +235,7 @@ void HcalRawDataClient::beginRun(void)
     } // if (!detid_.null()) 
   } 
 
+  if (debug_>2) std::cout <<"\t<HcalRawDataClient::beginRun> Completed loop."<<std::endl;
 
   enoughevents_=false;
   if (!dqmStore_) 
@@ -309,7 +316,7 @@ void HcalRawDataClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
 void HcalRawDataClient::getHardwareSpaceHistos(void){
   MonitorElement* me;
   string s;
-
+  if (debug_>1) cout<<"\t<HcalRawDataClient>: getHardwareSpaceHistos()"<<endl;
   s=subdir_+"Corruption/01 Common Data Format violations";
   me=dqmStore_->get(s.c_str());  
   meCDFErrorFound_=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, meCDFErrorFound_, debug_);
@@ -363,6 +370,204 @@ void HcalRawDataClient::getHardwareSpaceHistos(void){
       Chann_DataIntegrityCheck_[i]->SetMinimum(0);
   }
 }
+void HcalRawDataClient::fillProblemCountArray(void){
+  cout <<"\t<HcalRawDataClient>::fillProblemCountArray(): getHardwareSpaceHistos()\n";
+  getHardwareSpaceHistos();
+  float n=0.0;
+  int dcc_=-999;
+
+  bool CheckmeCDFErrorFound_                   = (meCDFErrorFound_                 ->GetEffectiveEntries()!=0);  
+  bool CheckmeDCCEventFormatError_             = (meDCCEventFormatError_           ->GetEffectiveEntries()!=0);  
+  bool CheckmeOrNSynch_			       = (meOrNSynch_			   ->GetEffectiveEntries()!=0);
+  bool CheckmeBCNSynch_			       = (meBCNSynch_			   ->GetEffectiveEntries()!=0);
+  bool CheckmeEvtNumberSynch_		       = (meEvtNumberSynch_		   ->GetEffectiveEntries()!=0);
+  bool CheckLRBDataCorruptionIndicators_       = (LRBDataCorruptionIndicators_     ->GetEffectiveEntries()!=0);
+  bool CheckHalfHTRDataCorruptionIndicators_   = (HalfHTRDataCorruptionIndicators_ ->GetEffectiveEntries()!=0);
+  bool CheckChannSumm_DataIntegrityCheck_      = (ChannSumm_DataIntegrityCheck_);
+  bool CheckChann_DataIntegrityCheck_[NUMDCCS] ; //Initialize below
+
+  int fed2offset=0;
+  int fed3offset=0;
+  int spg2offset=0;
+  int spg3offset=0;
+  int chn2offset=0;
+
+  //Project all types of errors in these two plots onto
+  //the x axis to get total errors per FED.
+  TH1D* ProjXmeCDFErrorFound_       = meCDFErrorFound_      ->ProjectionX();
+  TH1D* ProjXmeDCCEventFormatError_ = meDCCEventFormatError_->ProjectionX();
+
+  for (int dccid=FEDNumbering::MINHCALFEDID; dccid<=FEDNumbering::MAXHCALFEDID; dccid++) {
+    dcc_=dccid-FEDNumbering::MINHCALFEDID; // Numbering FEDS [0:31] is more useful for array indices.
+    CheckChann_DataIntegrityCheck_[dcc_] = (Chann_DataIntegrityCheck_[dcc_]);//->GetEffectiveEntries()!=0) ;
+
+    if (CheckmeCDFErrorFound_) {
+      n = ProjXmeCDFErrorFound_->GetBinContent(1+dcc_);
+      if (n>0.0) mapDCCproblem(dcc_,n);
+    }
+    if (CheckmeDCCEventFormatError_) {
+      n = ProjXmeDCCEventFormatError_->GetBinContent(1+dcc_);
+      if (n>0.0) mapDCCproblem(dcc_,n);
+    }
+
+    fed3offset = 1 + (4*dcc_); //3 bins, plus one of margin, each DCC (FED)
+    fed2offset = 1 + (3*dcc_); //2 bins, plus one of margin, each DCC (FED)
+    for (int spigot=0; spigot<NUMSPGS; spigot++) {
+      
+      if (CheckmeOrNSynch_) {
+	n = meOrNSynch_->GetBinContent(1+dcc_, 1+spigot);
+	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+      }
+      if (CheckmeBCNSynch_) {
+	n = meBCNSynch_->GetBinContent(1+dcc_, 1+spigot);
+	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+      }
+      if (CheckmeEvtNumberSynch_) {
+	n = meEvtNumberSynch_->GetBinContent(1+dcc_, 1+spigot);
+	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+      }
+      spg3offset = 1 + (4*spigot); //3 bins, plus one of margin, each spigot
+      if (CheckLRBDataCorruptionIndicators_    ){
+	n=0.0; //Summ errors of all nine types 
+	for (int xbin=1; xbin<=3; xbin++) {
+	  for (int ybin=1; ybin<=3; ybin++) {
+	    n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
+							   spg3offset+ybin);
+	  }
+	}
+	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+      }
+      if (CheckHalfHTRDataCorruptionIndicators_){
+	n=0.0; //Summ errors of all nine types 
+	for (int xbin=1; xbin<=3; xbin++) {
+	  for (int ybin=1; ybin<=3; ybin++) {
+	    n+=HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
+							       spg3offset+ybin);
+	  }
+	}
+	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+      }
+      spg2offset = 1 + (3*spigot); //2 bins, plus one of margin, each spigot
+      if (CheckChann_DataIntegrityCheck_[dcc_] &&
+	  CheckChannSumm_DataIntegrityCheck_      ){
+	//Each spigot may be configured for its own number of TimeSlices, per event.
+	//Keep an array of the values:
+	numTS_[(dcc_*NUMSPGS)+spigot]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
+										   spg2offset+1);
+	for (int chnnum=1; chnnum<HTRCHANMAX; chnnum++) {
+	  chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
+	  n = 0.0;
+	  //Sum errors of all types, 
+	  //but not !DV, at xbin==1, ybin==2.
+	  //Weight less if error can occur every timeslice
+	  // or between any two timeslices
+	  float tsFactor=numTS_[spigot +(dcc_*NUMSPGS)]; 
+	  float CRweight = 0.0;
+	  float Erweight = 0.0;
+	  if (tsFactor>0) {
+	    CRweight = (1.0 / (tsFactor-1.0));
+	    Erweight = (1.0 / (tsFactor    ));
+	  }
+	  int xbin=1; int ybin=1; // Number of timeslices wrong here
+	  n += Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+							      spg2offset+ybin);
+	  xbin=2; //move right one bin: CapID Rotation here
+	  n += CRweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+									 spg2offset+ybin);
+	  ybin=2; //move up one bin: Er bit here
+	  n += Erweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+									 spg2offset+ybin);
+	  if  (n>=0.0)
+	    mapChannproblem(dcc_,spigot,chnnum,n);
+	} //loop over channels
+      } //check to see if FED had any channel problems  
+    } //loop over spigot
+  } //loop over dccid
+}
+
+void HcalRawDataClient::mapDCCproblem(int dcc, float n) {
+  int myeta   = 0;
+  int myphi   =-1;
+  int mydepth = 0;
+  HcalDetId HDI;
+  //Light up all affected cells.
+  for (int i=hashup(dcc); 
+       i<hashup(dcc)+(NUMSPGS*HTRCHANMAX); 
+       i++) {
+    HDI = hashedHcalDetId_[i];
+    if (HDI==HcalDetId::Undefined) 
+      continue;
+    mydepth = HDI.depth();
+    myphi   = HDI.iphi();
+    myeta = CalcEtaBin(HDI.subdet(),
+		       HDI.ieta(),
+		       mydepth);
+    if (myeta>=0 && myeta<85 &&
+	(myphi-1)>=0 && (myphi-1)<72 &&
+	(mydepth-1)>=0 && (mydepth-1)<4){
+      if (problemcount[myeta][myphi-1][mydepth-1]< n)
+	problemcount[myeta][myphi-1][mydepth-1]=n;
+      if (debug_>0)
+	cout<<" mapDCCproblem found error! "<<HDI.subdet()<<"("<<HDI.ieta()<<", "<<HDI.iphi()<<", "<<HDI.depth()<<")"<<endl;
+    }
+  }
+}
+void HcalRawDataClient::mapHTRproblem(int dcc, int spigot, float n) {
+  int myeta = 0;
+  int myphi   =-1;
+  int mydepth = 0;
+  HcalDetId HDI;
+  //Light up all affected cells.
+  for (int i=hashup(dcc,spigot); 
+       i<hashup(dcc,spigot)+(HTRCHANMAX); //nice, linear hash....
+       i++) {
+    HDI = hashedHcalDetId_[i];
+    if (HDI==HcalDetId::Undefined) {
+      continue;
+    }
+    mydepth = HDI.depth();
+    myphi   = HDI.iphi();
+    myeta = CalcEtaBin(HDI.subdet(),
+		       HDI.ieta(),
+		       mydepth);
+    if (myeta>=0 && myeta<85 &&
+	(myphi-1)>=0 && (myphi-1)<72 &&
+	(mydepth-1)>=0 && (mydepth-1)<4){
+      if (problemcount[myeta][myphi-1][mydepth-1]< n)
+	problemcount[myeta][myphi-1][mydepth-1]=n;
+      if (debug_>0)
+	cout<<" mapHTRproblem found error! "<<HDI.subdet()<<"("<<HDI.ieta()<<", "<<HDI.iphi()<<", "<<HDI.depth()<<")"<<endl;
+    }    
+  }
+}   // void HcalRawDataClient::mapHTRproblem(...)
+
+void HcalRawDataClient::mapChannproblem(int dcc, int spigot, int htrchan, float n) {
+  int myeta = 0;
+  int myphi   =-1;
+  int mydepth = 0;
+  HcalDetId HDI;
+  //Light up the affected cell.
+  int i=hashup(dcc,spigot,htrchan); 
+  HDI = HashToHDI(i);
+  if (HDI==HcalDetId::Undefined) {
+    return; // Do nothing at all, instead.
+  } 
+  mydepth = HDI.depth();
+  myphi   = HDI.iphi();
+  myeta = CalcEtaBin(HDI.subdet(),
+		     HDI.ieta(),
+		     mydepth);
+  if (myeta>=0 && myeta<85 &&
+      (myphi-1)>=0 && (myphi-1)<72 &&
+      (mydepth-1)>=0 && (mydepth-1)<4){
+    if (problemcount[myeta][myphi-1][mydepth-1]< n)
+      problemcount[myeta][myphi-1][mydepth-1]=n;
+    if (debug_>0)
+      cout<<" mapChannproblem found error! "<<HDI.subdet()<<"("<<HDI.ieta()<<", "<<HDI.iphi()<<", "<<HDI.depth()<<")"<<endl;
+  }
+}   // void HcalRawDataClient::mapChannproblem(...)
+
+
 void HcalRawDataClient::normalizeHardwareSpaceHistos(void){
   // Get histograms that are used in testing
   getHardwareSpaceHistos();
