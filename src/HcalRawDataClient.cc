@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/10 04:17:29 $
- * $Revision: 1.1.2.3 $
+ * $Date: 2010/03/10 06:57:22 $
+ * $Revision: 1.1.2.5 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -384,7 +384,7 @@ void HcalRawDataClient::getHardwareSpaceHistos(void){
   }
 }
 void HcalRawDataClient::fillProblemCountArray(void){
-  cout <<"\t<HcalRawDataClient>::fillProblemCountArray(): getHardwareSpaceHistos()\n";
+  if (debug_>1) std::cout <<"\t<HcalRawDataClient>::fillProblemCountArray(): getHardwareSpaceHistos()"<<std::endl;
   getHardwareSpaceHistos();
   float n=0.0;
   int dcc_=-999;
