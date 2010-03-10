@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagPedestalClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.1.2.2 $
+ * $Date: 2010/03/10 11:56:58 $
+ * $Revision: 1.5.4.1 $
  * \author J. Temple
  * \brief Hcal DetDiagPedestal Client class
  */
@@ -94,22 +94,32 @@ void HcalDetDiagPedestalClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
+      // Assume that histograms aren't found
+      PedestalsMissing[i]=0;
+      PedestalsUnstable[i]=0;
+      PedestalsBadMean[i]=0;
+      PedestalsBadRMS[i]=0;
       string s=subdir_+name[i]+" Problem Missing Channels";
       me=dqmStore_->get(s.c_str());
       if (me!=0) PedestalsMissing[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, PedestalsMissing[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else 
+	{
+	  if (debug_>0) 
+	    std::cout <<"<HcalDetDiagPedestalClient::calcluateProblems> could not get histogram '"<<s<<"'"<<std::endl;
+	}
+
       s=subdir_+name[i]+" Problem Unstable Channels";
       me=dqmStore_->get(s.c_str());
       if (me!=0) PedestalsUnstable[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, PedestalsUnstable[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
       s=subdir_+name[i]+" Problem Bad Pedestal Value";
       me=dqmStore_->get(s.c_str());
       if (me!=0) PedestalsBadMean[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, PedestalsBadMean[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
       s=subdir_+name[i]+" Problem Bad Rms Value";
       me=dqmStore_->get(s.c_str());
       if (me!=0) PedestalsBadRMS[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, PedestalsBadRMS[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else if (debug_>0) std::cout <<"<HcalDetDiagPedestalClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
     }      
 
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute

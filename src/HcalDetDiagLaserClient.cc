@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagLaserClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.1.2.2 $
+ * $Date: 2010/03/10 11:56:58 $
+ * $Revision: 1.3.4.1 $
  * \author J. Temple
  * \brief Hcal DetDiagLaser Client class
  */
@@ -92,14 +92,16 @@ void HcalDetDiagLaserClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
+      BadTiming[i]=0;
+      BadEnergy[i]=0;
       string s=subdir_+name[i]+" Problem Bad Laser Timing";
       me=dqmStore_->get(s.c_str());
       if (me!=0) BadTiming[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadTiming[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
       s=subdir_+name[i]+" Problem Bad Laser Energy";
       me=dqmStore_->get(s.c_str());
       if (me!=0) BadEnergy[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadEnergy[i], debug_);
-      else if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      else if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
     }      
 
   // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
@@ -160,7 +162,7 @@ void HcalDetDiagLaserClient::calculateProblems()
 
   if (ProblemCells==0)
     {
-      if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::analyze> ProblemCells histogram does not exist!"<<endl;
+      if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::calculateProblems> ProblemCells histogram does not exist!"<<endl;
       return;
     }
 
