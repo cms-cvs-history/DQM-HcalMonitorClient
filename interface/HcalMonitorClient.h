@@ -4,21 +4,17 @@
 /*
  * \file HcalMonitorClient.h
  * 
- * $Date: 2010/03/08 07:46:39 $
- * $Revision: 1.45.2.4 $
+ * $Date: 2010/03/10 14:21:17 $
+ * $Revision: 1.45.2.5 $
  * \author J. Temple
  * 
  */
-
-
 
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/Framework/interface/EDAnalyzer.h"
-
-#include "TROOT.h"
-#include "TH1.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbService.h"
 
 #include "DQM/HcalMonitorClient/interface/HcalBaseDQClient.h"
 #include "DQM/HcalMonitorTasks/interface/HcalEtaPhiHists.h"
@@ -80,6 +76,8 @@ public:
   // Write html output
   void writeHtml();
 
+  void PlotPedestalValues(const HcalDbService& cond);
+
 private:
   // Event counters
   int ievt_; // all events
@@ -120,6 +118,10 @@ private:
 
   HcalSummaryClient* summaryClient_;
   EtaPhiHists* ChannelStatus;
+  EtaPhiHists* ADC_PedestalFromDBByDepth;
+  EtaPhiHists* ADC_WidthFromDBByDepth;
+  EtaPhiHists* fC_PedestalFromDBByDepth;
+  EtaPhiHists* fC_WidthFromDBByDepth;
 
 };
 

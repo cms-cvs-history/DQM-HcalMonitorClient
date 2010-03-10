@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/10 14:21:17 $
- * $Revision: 1.92.2.14 $
+ * $Date: 2010/03/10 16:28:13 $
+ * $Revision: 1.92.2.15 $
  * \author J. Temple
  * 
  */
@@ -22,7 +22,6 @@
 #include "DQM/HcalMonitorClient/interface/HcalDetDiagLEDClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDetDiagNoiseMonitorClient.h"
 
-
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -40,10 +39,14 @@
 #include "CondFormats/DataRecord/interface/HcalChannelQualityRcd.h"
 
 #include "CalibCalorimetry/HcalAlgos/interface/HcalDbASCIIIO.h"
+#include "CalibFormats/HcalObjects/interface/HcalDbRecord.h"
 
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+
+#include "TROOT.h"
+#include "TH1.h"
 
 using namespace cms;
 using namespace edm;
@@ -77,8 +80,13 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
 	  std::cout <<enabledClients_[i]<<std::endl;
     } // if (debug_>0)
 
+  // Set all EtaPhiHists pointers to 0 to start
   ChannelStatus=0; 
-  
+  ADC_PedestalFromDBByDepth=0;
+  ADC_WidthFromDBByDepth=0;
+  fC_PedestalFromDBByDepth=0;
+  fC_WidthFromDBByDepth=0;
+
   // Add all relevant clients
   //clients_.reserve(12); // any reason to reserve ahead of time?
 
@@ -188,6 +196,35 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
 	  if (ChannelStatus->depth[d]) ChannelStatus->depth[d]->setTitle(x.str().c_str());
 	  x.str("");
 	}
+    }
+
+  edm::ESHandle<HcalDbService> conditions;
+  c.get<HcalDbRecord>().get(conditions);
+  // Now let's setup pedestals
+  if (dqmStore_ )
+    {
+      dqmStore_->setCurrentFolder(prefixME_+"HcalInfo/PedestalsFromCondDB");
+      if (ADC_PedestalFromDBByDepth==0)
+	{
+	  ADC_PedestalFromDBByDepth = new EtaPhiHists;
+	  ADC_PedestalFromDBByDepth->setup(dqmStore_,"ADC Pedestals From Conditions DB");
+	}
+      if (ADC_WidthFromDBByDepth==0)
+	{
+	  ADC_WidthFromDBByDepth = new EtaPhiHists;
+	  ADC_WidthFromDBByDepth->setup(dqmStore_,"ADC Widths From Conditions DB");
+	}
+      if (fC_PedestalFromDBByDepth==0)
+	{
+	  fC_PedestalFromDBByDepth = new EtaPhiHists;
+	  fC_PedestalFromDBByDepth->setup(dqmStore_,"fC Pedestals From Conditions DB");
+	}
+      if (fC_WidthFromDBByDepth==0)
+	{
+	  fC_WidthFromDBByDepth = new EtaPhiHists;
+	  fC_WidthFromDBByDepth->setup(dqmStore_,"fC Widths From Conditions DB");
+	}
+      PlotPedestalValues(*conditions);
     }
 
   // Find only channels with non-zero quality, and add them to badchannelmap
@@ -497,5 +534,124 @@ void HcalMonitorClient::writeChannelStatus()
   HcalDbASCIIIO::dumpObject (outStream, (*newChanQual));
   return;
 } // void HcalMonitorClient::writeChannelStatus()
+
+
+void HcalMonitorClient::PlotPedestalValues(const HcalDbService& cond)
+{
+  const HcalQIEShape* shape_ = cond.getHcalShape(); // this one is generic
+
+  double ADC_ped=0;
+  double ADC_width=0;
+  double fC_ped=0;
+  double fC_width=0;
+  double temp_ADC=0;
+  double temp_fC=0;
+
+  int ieta=-9999;
+  int iphi=-9999;
+  HcalCalibrations calibs_;
+
+  ADC_PedestalFromDBByDepth->Reset();
+  ADC_WidthFromDBByDepth->Reset();
+  fC_PedestalFromDBByDepth->Reset();
+  fC_WidthFromDBByDepth->Reset();
+
+
+  for (int subdet=1; subdet<=4;++subdet)
+    {
+      for (int depth=0;depth<4;++depth)
+	{
+	  int etabins= ADC_PedestalFromDBByDepth->depth[depth]->getNbinsX();
+	  int phibins = ADC_PedestalFromDBByDepth->depth[depth]->getNbinsY();
+	  for (int eta=0;eta<etabins;++eta)
+	    {
+	      ieta=CalcIeta(subdet,eta,depth+1);
+	      if (ieta==-9999) continue;
+	      for (int phi=0;phi<phibins;++phi)
+		{
+		  iphi=phi+1;
+		  if (!validDetId((HcalSubdetector)(subdet), ieta, iphi, depth+1)) continue;
+		  HcalDetId detid((HcalSubdetector)(subdet), ieta, iphi, depth+1);
+		  ADC_ped=0;
+		  ADC_width=0;
+		  fC_ped=0;
+		  fC_width=0;
+		  calibs_= cond.getHcalCalibrations(detid);  
+		  const HcalPedestalWidth* pedw = cond.getPedestalWidth(detid);
+		  const HcalQIECoder* channelCoder_ = cond.getHcalCoder(detid);
+
+		  // Loop over capIDs
+		  for (unsigned int capid=0;capid<4;++capid)
+		    {
+		      // Still need to determine how to convert widths to ADC or fC
+		      // calibs_.pedestal value is always in fC, according to Radek
+		      temp_fC = calibs_.pedestal(capid);
+		      fC_ped+= temp_fC;
+		      // convert to ADC from fC
+		      temp_ADC=channelCoder_->adc(*shape_,
+						  (float)calibs_.pedestal(capid),
+						  capid);
+		      ADC_ped+=temp_ADC;
+
+		      // Pedestals assumed to be read out in fC
+		      temp_fC=pedw->getSigma(capid,capid);
+		      fC_width+=temp_fC;
+		      temp_ADC=pedw->getSigma(capid,capid)*pow(1.*channelCoder_->adc(*shape_,(float)calibs_.pedestal(capid),capid)/calibs_.pedestal(capid),2);
+		      ADC_width+=temp_ADC;
+		    }//capid loop
+
+		  // Pedestal values are average over four cap IDs
+		  // widths are sqrt(SUM [sigma_ii^2])/4.
+		  fC_ped/=4.;
+		  ADC_ped/=4.;
+
+		  // Divide width by 2, or by four?
+		  // Dividing by 2 gives subtracted results closer to zero -- estimate of variance?
+		  fC_width=pow(fC_width,0.5)/2.;
+		  ADC_width=pow(ADC_width,0.5)/2.;
+
+		  if (debug_>1)
+		    {
+		      std::cout <<"<HcalMonitorClient::PlotPedestalValues> HcalDet ID = "<<(HcalSubdetector)subdet<<": ("<<ieta<<", "<<iphi<<", "<<depth<<")"<<endl;
+		      std::cout <<"\tADC pedestal = "<<ADC_ped<<" +/- "<<ADC_width<<endl;
+		      std::cout <<"\tfC pedestal = "<<fC_ped<<" +/- "<<fC_width<<endl;
+		    }
+		  // Shift HF by -/+1 when filling eta-phi histograms
+		  int zside=0;
+		  if (subdet==4)
+		    {
+		      if (ieta<0) zside=-1;
+		      else zside=1;
+		    }
+		  ADC_PedestalFromDBByDepth->depth[depth]->Fill(ieta+zside,iphi,ADC_ped);
+		  ADC_WidthFromDBByDepth->depth[depth]->Fill(ieta+zside, iphi, ADC_width);
+		  fC_PedestalFromDBByDepth->depth[depth]->Fill(ieta+zside,iphi,fC_ped);
+		  fC_WidthFromDBByDepth->depth[depth]->Fill(ieta+zside, iphi, fC_width);
+		} // phi loop
+	    } // eta loop
+	} //depth loop
+
+    } // subdet loop
+  FillUnphysicalHEHFBins(*ADC_PedestalFromDBByDepth);
+  FillUnphysicalHEHFBins(*ADC_WidthFromDBByDepth);
+  FillUnphysicalHEHFBins(*fC_PedestalFromDBByDepth);
+  FillUnphysicalHEHFBins(*fC_WidthFromDBByDepth);
+
+  // Center ADC pedestal values near 3 +/- 1
+  for (unsigned int i=0;i<ADC_PedestalFromDBByDepth->depth.size();++i)
+  {
+    ADC_PedestalFromDBByDepth->depth[i]->getTH2F()->SetMinimum(0);
+    if (ADC_PedestalFromDBByDepth->depth[i]->getTH2F()->GetMaximum()<6)
+      ADC_PedestalFromDBByDepth->depth[i]->getTH2F()->SetMaximum(6);
+  }
+
+  for (unsigned int i=0;i<ADC_WidthFromDBByDepth->depth.size();++i)
+  {
+    ADC_WidthFromDBByDepth->depth[i]->getTH2F()->SetMinimum(0);
+    if (ADC_WidthFromDBByDepth->depth[i]->getTH2F()->GetMaximum()<2)
+      ADC_WidthFromDBByDepth->depth[i]->getTH2F()->SetMaximum(2);
+  }
+
+}
 
 DEFINE_FWK_MODULE(HcalMonitorClient);
