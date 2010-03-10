@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/10 06:57:22 $
- * $Revision: 1.1.2.5 $
+ * $Date: 2010/03/10 14:21:48 $
+ * $Revision: 1.1.2.6 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -389,15 +389,32 @@ void HcalRawDataClient::fillProblemCountArray(void){
   float n=0.0;
   int dcc_=-999;
 
-  bool CheckmeCDFErrorFound_                   = (meCDFErrorFound_                 ->GetEffectiveEntries()!=0);  
-  bool CheckmeDCCEventFormatError_             = (meDCCEventFormatError_           ->GetEffectiveEntries()!=0);  
-  bool CheckmeOrNSynch_			       = (meOrNSynch_			   ->GetEffectiveEntries()!=0);
-  bool CheckmeBCNSynch_			       = (meBCNSynch_			   ->GetEffectiveEntries()!=0);
-  bool CheckmeEvtNumberSynch_		       = (meEvtNumberSynch_		   ->GetEffectiveEntries()!=0);
-  bool CheckLRBDataCorruptionIndicators_       = (LRBDataCorruptionIndicators_     ->GetEffectiveEntries()!=0);
-  bool CheckHalfHTRDataCorruptionIndicators_   = (HalfHTRDataCorruptionIndicators_ ->GetEffectiveEntries()!=0);
-  bool CheckChannSumm_DataIntegrityCheck_      = (ChannSumm_DataIntegrityCheck_);
-  bool CheckChann_DataIntegrityCheck_[NUMDCCS] ; //Initialize below
+  bool CheckmeCDFErrorFound_                   = false; 
+  bool CheckmeDCCEventFormatError_             = false;
+  bool CheckmeOrNSynch_			       = false;
+  bool CheckmeBCNSynch_			       = false;
+  bool CheckmeEvtNumberSynch_		       = false;
+  bool CheckLRBDataCorruptionIndicators_       = false;
+  bool CheckHalfHTRDataCorruptionIndicators_   = false;
+  bool CheckChannSumm_DataIntegrityCheck_      = false;
+  bool CheckChann_DataIntegrityCheck_[NUMDCCS] ; 
+
+  if (meCDFErrorFound_!=0)
+    CheckmeCDFErrorFound_                   = (meCDFErrorFound_                 ->GetEffectiveEntries()!=0);  
+  if (meDCCEventFormatError_!=0)
+    CheckmeDCCEventFormatError_             = (meDCCEventFormatError_           ->GetEffectiveEntries()!=0);  
+  if (meOrNSynch_!=0)
+    CheckmeOrNSynch_			       = (meOrNSynch_			   ->GetEffectiveEntries()!=0);
+  if (meBCNSynch_!=0)
+    CheckmeBCNSynch_			       = (meBCNSynch_			   ->GetEffectiveEntries()!=0);
+  if (meEvtNumberSynch_!=0)
+    CheckmeEvtNumberSynch_		       = (meEvtNumberSynch_		   ->GetEffectiveEntries()!=0);
+  if (LRBDataCorruptionIndicators_!=0)
+    CheckLRBDataCorruptionIndicators_       = (LRBDataCorruptionIndicators_     ->GetEffectiveEntries()!=0);
+  if (HalfHTRDataCorruptionIndicators_!=0)
+    CheckHalfHTRDataCorruptionIndicators_   = (HalfHTRDataCorruptionIndicators_ ->GetEffectiveEntries()!=0);
+  if (ChannSumm_DataIntegrityCheck_!=0)
+    CheckChannSumm_DataIntegrityCheck_      = (ChannSumm_DataIntegrityCheck_);
 
   int fed2offset=0;
   int fed3offset=0;
@@ -405,14 +422,20 @@ void HcalRawDataClient::fillProblemCountArray(void){
   int spg3offset=0;
   int chn2offset=0;
 
+  
   //Project all types of errors in these two plots onto
   //the x axis to get total errors per FED.
-  TH1D* ProjXmeCDFErrorFound_       = meCDFErrorFound_      ->ProjectionX();
-  TH1D* ProjXmeDCCEventFormatError_ = meDCCEventFormatError_->ProjectionX();
+  TH1D* ProjXmeCDFErrorFound_       = 0;
+  if (meCDFErrorFound_!=0)
+    meCDFErrorFound_      ->ProjectionX();
+  TH1D* ProjXmeDCCEventFormatError_ = 0;
+  if (meDCCEventFormatError_!=0)
+    meDCCEventFormatError_->ProjectionX();
 
   for (int dccid=FEDNumbering::MINHCALFEDID; dccid<=FEDNumbering::MAXHCALFEDID; dccid++) {
     dcc_=dccid-FEDNumbering::MINHCALFEDID; // Numbering FEDS [0:31] is more useful for array indices.
-    CheckChann_DataIntegrityCheck_[dcc_] = (Chann_DataIntegrityCheck_[dcc_]);//->GetEffectiveEntries()!=0) ;
+    if (Chann_DataIntegrityCheck_[dcc_]!=0)
+      CheckChann_DataIntegrityCheck_[dcc_] = (Chann_DataIntegrityCheck_[dcc_]);//->GetEffectiveEntries()!=0) ;
 
     if (CheckmeCDFErrorFound_) {
       n = ProjXmeCDFErrorFound_->GetBinContent(1+dcc_);
