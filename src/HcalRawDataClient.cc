@@ -441,7 +441,9 @@ void HcalRawDataClient::fillProblemCountArray(void){
       }
       spg3offset = 1 + (4*spigot); //3 bins, plus one of margin, each spigot
       if (CheckLRBDataCorruptionIndicators_    ){
-	n=0.0; //Summ errors of all nine types 
+	n=0.0; //Sum errors of all ten types 
+	n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset,
+						       spg3offset);
 	for (int xbin=1; xbin<=3; xbin++) {
 	  for (int ybin=1; ybin<=3; ybin++) {
 	    n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
@@ -451,7 +453,7 @@ void HcalRawDataClient::fillProblemCountArray(void){
 	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       if (CheckHalfHTRDataCorruptionIndicators_){
-	n=0.0; //Summ errors of all nine types 
+	n=0.0; //Sum errors of all nine types 
 	for (int xbin=1; xbin<=3; xbin++) {
 	  for (int ybin=1; ybin<=3; ybin++) {
 	    n+=HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
