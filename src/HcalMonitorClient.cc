@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/09 22:35:43 $
- * $Revision: 1.92.2.13 $
+ * $Date: 2010/03/10 14:21:17 $
+ * $Revision: 1.92.2.14 $
  * \author J. Temple
  * 
  */
@@ -56,7 +56,9 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   mergeRuns_ = ps.getUntrackedParameter<bool>("mergeRuns", false);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   prescaleFactor_ = ps.getUntrackedParameter<int>("prescaleFactor", -1);
-  prefixME_ = ps.getUntrackedParameter<string>("prefixME", "Hcal/");
+  prefixME_ = ps.getUntrackedParameter<string>("subSystemFolder", "Hcal/");
+  if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
+    prefixME_.append("/");
   enableCleanup_ = ps.getUntrackedParameter<bool>("enableCleanup", false);
   enabledClients_ = ps.getUntrackedParameter<vector<string> >("enabledClients", enabledClients_);
 
