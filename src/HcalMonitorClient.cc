@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/08 23:43:06 $
- * $Revision: 1.92.2.11 $
+ * $Date: 2010/03/09 22:35:43 $
+ * $Revision: 1.92.2.13 $
  * \author J. Temple
  * 
  */
@@ -17,6 +17,11 @@
 #include "DQM/HcalMonitorClient/interface/HcalBeamClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalNZSClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalSummaryClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagPedestalClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagLaserClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagLEDClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagNoiseMonitorClient.h"
+
 
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -58,6 +63,7 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   updateTime_ = ps.getUntrackedParameter<int>("UpdateTime",0);
   baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
   htmlUpdateTime_ = ps.getUntrackedParameter<int>("htmlUpdateTime", 0);
+  htmlFirstUpdate_ = ps.getUntrackedParameter<int>("htmlFirstUpdate",15);
   databasedir_   = ps.getUntrackedParameter<std::string>("databaseDir","");
   databaseUpdateTime_ = ps.getUntrackedParameter<int>("databaseUpdateTime",0);
   databaseFirstUpdate_ = ps.getUntrackedParameter<int>("databaseFirstUpdate",10);
@@ -72,13 +78,13 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   ChannelStatus=0; 
   
   // Add all relevant clients
-  clients_.reserve(12); // any reason to reserve ahead of time?
+  //clients_.reserve(12); // any reason to reserve ahead of time?
 
   clients_.push_back(new HcalBaseDQClient((string)"HcalMonitorModule",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DeadCellMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalDeadCellClient((string)"DeadCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"HotCellMonitor")!=enabledClients_.end())
-   clients_.push_back(new HcalHotCellClient((string)"HotCellMonitor",ps));
+    clients_.push_back(new HcalHotCellClient((string)"HotCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"RecHitMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalRecHitClient((string)"RecHitMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DigiMonitor")!=enabledClients_.end())
@@ -91,6 +97,14 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
     clients_.push_back(new HcalNZSClient((string)"NZSMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"BeamMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalBeamClient((string)"BeamMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagPedestalMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDetDiagPedestalClient((string)"DetDiagPedestalMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagLaserMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDetDiagLaserClient((string)"DetDiagLaserMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagLEDMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDetDiagLEDClient((string)"DetDiagLEDMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagNoiseMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDetDiagNoiseMonitorClient((string)"DetDiagNoiseMonitor",ps));
 
   if (find(enabledClients_.begin(), enabledClients_.end(),"Summary")!=enabledClients_.end())
     summaryClient_ = new HcalSummaryClient((string)"ReportSummaryClient",ps);
@@ -300,7 +314,11 @@ void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const Event
     }
   if (htmlUpdateTime_>0)
     {
-      if ((current_time_-last_time_html_)>=60*htmlUpdateTime_) // htmlUpdateTime_ in minutes
+      if (
+	  (last_time_html_==0 && (current_time_-last_time_html_)>=60*databaseFirstUpdate_)
+	  // 
+	  ||((current_time_-last_time_html_)>=60*htmlUpdateTime_)
+	  ) // htmlUpdateTime_ in minutes
 	{
 	  this->writeHtml();
 	  last_time_html_=current_time_;

@@ -4,8 +4,8 @@
 /*
  * \file HcalMonitorClient.h
  * 
- * $Date: 2010/03/05 18:39:08 $
- * $Revision: 1.45.2.3 $
+ * $Date: 2010/03/08 07:46:39 $
+ * $Revision: 1.45.2.4 $
  * \author J. Temple
  * 
  */
@@ -105,6 +105,7 @@ private:
   std::string databasedir_;
   int databaseUpdateTime_; //update time for dumping db info (offset by 10 minutes, so that always dump after 10 minutes)
   int databaseFirstUpdate_; // first update time (in minutes)
+  int htmlFirstUpdate_; // first update for html
 
   // time parameters
   time_t current_time_;

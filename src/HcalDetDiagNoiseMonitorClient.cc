@@ -1,257 +1,278 @@
-#include <DQM/HcalMonitorClient/interface/HcalDetDiagNoiseMonitorClient.h>
-#include <DQM/HcalMonitorClient/interface/HcalClientUtils.h>
-#include <math.h>
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagNoiseMonitorClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalClientUtils.h"
+#include "DQM/HcalMonitorClient/interface/HcalHistoUtils.h"
+
+#include "CondFormats/HcalObjects/interface/HcalChannelStatus.h"
+#include "CondFormats/HcalObjects/interface/HcalChannelQuality.h"
+#include "CondFormats/HcalObjects/interface/HcalCondObjectContainer.h"
+
 #include <iostream>
 
-HcalDetDiagNoiseMonitorClient::HcalDetDiagNoiseMonitorClient(){}
+/*
+ * \file HcalDetDiagNoiseMonitorClient.cc
+ * 
+ * $Date: 2010/03/10 11:56:58 $
+ * $Revision: 1.3.4.1 $
+ * \author J. Temple
+ * \brief Hcal DetDiagNoiseMonitor Client class
+ */
 
-void HcalDetDiagNoiseMonitorClient::init(const ParameterSet& ps, DQMStore* dbe,string clientName) {
-  //Call the base class first
-  HcalBaseClient::init(ps,dbe,clientName);
-  return;
-}
+using namespace std;
+using namespace edm;
 
-HcalDetDiagNoiseMonitorClient::~HcalDetDiagNoiseMonitorClient() {
-  this->cleanup();
-}
-
-void HcalDetDiagNoiseMonitorClient::beginJob() {
-
-  if ( debug_ ) std::cout << "HcalDetDiagNoiseMonitorClient: beginJob" << std::endl;
-  ievt_ = 0;
-  jevt_ = 0;
-  this->setup();
-  if (!dbe_) return;
-
-  if(!Online_) {
-
-    stringstream mydir;
-    mydir<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring";
-    dbe_->setCurrentFolder(mydir.str().c_str());
-    std::string title = "MET Threshold vs Rate All Events";
-    Met_AllEvents_Rate = dbe_->book1D("MET_Rate_All_Events","MET_Rate_All_Events",200,0,2000);
-    Met_AllEvents_Rate->setAxisTitle(title);
-    mydir.str("");
-
-    mydir<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/HcalNoiseCategory";
-    dbe_->setCurrentFolder(mydir.str().c_str());
-    title="MET Threshold vs Rate passing selections & Categorized as 'Hcal Noise'";
-    Met_passingTrigger_HcalNoiseCategory_Rate = dbe_->book1D("Hcal_Noise_MET_Rate_pass_selections","Hcal_Noise_MET_Rate_pass_selections",200,0,2000);
-    Met_passingTrigger_HcalNoiseCategory_Rate->setAxisTitle(title);
-    mydir.str("");
-
-    mydir<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/PhysicsCategory";
-    dbe_->setCurrentFolder(mydir.str().c_str());
-    title="MET Threshold vs Rate passing selections & Categorized as 'Physics'";
-    Met_passingTrigger_PhysicsCategory_Rate = dbe_->book1D("Physics_MET_Rate_pass_selections","Physics_MET_Rate_pass_selections",200,0,2000);
-    Met_passingTrigger_PhysicsCategory_Rate->setAxisTitle(title);
-    mydir.str("");
-
-    mydir<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring";
-    dbe_->setCurrentFolder(mydir.str().c_str());
-    title = "Jet E_{T} Threshold vs Rate - events passing selections";
-    Jets_Et_passing_selections_Rate = dbe_->book1D("Jets_Et_passing_selections_Rate","Jets_Et_passing_selections_Rate",200,0,2000);
-    Jets_Et_passing_selections_Rate->setAxisTitle(title);
-    mydir.str("");
-
-    mydir<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/HcalNoiseCategory";
-    dbe_->setCurrentFolder(mydir.str().c_str());
-    title = "'Noise' Jet E_{T} Threshold vs Rate - events passing selections";
-    Noise_Jets_Et_passing_selections_Rate = dbe_->book1D("Noise_Jets_Et_passing_selections_Rate","Noise_Jets_Et_passing_selections_Rate",200,0,2000);
-    Noise_Jets_Et_passing_selections_Rate->setAxisTitle(title);
-    mydir.str("");
-
-  }
-
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::beginRun(void) {
-  if ( debug_ ) std::cout << "HcalDetDiagNoiseMonitorClient: beginRun" << std::endl;
-  jevt_ = 0;
-  this->setup();
-  this->resetAllME();
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::endJob(void) {
-  if ( debug_ ) std::cout << "HcalDetDiagNoiseMonitorClient: endJob, ievt = " << ievt_ << std::endl;
-  this->cleanup();
-  return;
-}
-
-
-void HcalDetDiagNoiseMonitorClient::endRun(void)  {
-  if ( debug_ ) std::cout << "HcalDetDiagNoiseMonitorClient: endRun, jevt = " << jevt_ << std::endl;
-
-  if(!Online_) {
-
-    stringstream name;
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/MET_All_Events";
-    MonitorElement* metall = dbe_->get(name.str().c_str());
-    if(metall) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/HcalNoiseCategory/Hcal_Noise_MET_pass_selections";
-    MonitorElement* metnoise = dbe_->get(name.str().c_str());
-    if(metnoise) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/PhysicsCategory/Physics_MET_pass_selections";
-    MonitorElement* metphysics = dbe_->get(name.str().c_str());
-    if(metphysics) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/NLumiSections";
-    MonitorElement* nLS = dbe_->get(name.str().c_str());
-    if(nLS) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/Jets_Et_passing_selections";
-    MonitorElement* jetetall = dbe_->get(name.str().c_str());
-    if(jetetall) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    name<<process_.c_str()<<rootFolder_<<"/HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/HcalNoiseCategory/Noise_Jets_Et_passing_selections";
-    MonitorElement* jetetnoise = dbe_->get(name.str().c_str());
-    if(jetetnoise) {
-      ievt_ = -1;
-      if ( debug_ ) {std::cout << "Found '" << name.str().c_str() << "'" << std::endl;}
-    }
-    name.str("");
-
-    if(nLS->getBinContent(1) > 0) {
-      for(int bin1=0; bin1<=201; bin1++) {
-        double integral=0.0;
-        for(int bin2=bin1; bin2<=201; bin2++) {integral += metall->getBinContent(bin2);}
-        Met_AllEvents_Rate->setBinContent(bin1, integral / (nLS->getBinContent(1) * 93.0));
-      }
-      for(int bin1=0; bin1<=201; bin1++) {
-        double integral=0.0;
-        for(int bin2=bin1; bin2<=201; bin2++) {integral += metnoise->getBinContent(bin2);}
-        Met_passingTrigger_HcalNoiseCategory_Rate->setBinContent(bin1, integral / (nLS->getBinContent(1) * 93.0));
-      }
-      for(int bin1=0; bin1<=201; bin1++) {
-        double integral=0.0;
-        for(int bin2=bin1; bin2<=201; bin2++) {integral += metphysics->getBinContent(bin2);}
-        Met_passingTrigger_PhysicsCategory_Rate->setBinContent(bin1, integral / (nLS->getBinContent(1) * 93.0));
-      }
-      for(int bin1=0; bin1<=201; bin1++) {
-        double integral=0.0;
-        for(int bin2=bin1; bin2<=201; bin2++) {integral += jetetall->getBinContent(bin2);}
-        Jets_Et_passing_selections_Rate->setBinContent(bin1, integral / (nLS->getBinContent(1) * 93.0));
-      }
-      for(int bin1=0; bin1<=201; bin1++) {
-        double integral=0.0;
-        for(int bin2=bin1; bin2<=201; bin2++) {integral += jetetnoise->getBinContent(bin2);}
-        Noise_Jets_Et_passing_selections_Rate->setBinContent(bin1, integral / (nLS->getBinContent(1) * 93.0));
-      }
-    }
-
-  }
-
-  this->cleanup();
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::setup(void) {
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::cleanup(void) {
-  // leave deletions to framework
-  if(1<0 && cloneME_) {
-    // delete individual histogram pointers      
-  }
-  dqmReportMapErr_.clear(); 
-  dqmReportMapWarn_.clear(); 
-  dqmReportMapOther_.clear();
-  dqmQtests_.clear();
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::report() {
-  if(!dbe_) return;
-  if ( debug_ ) std::cout << "HcalDetDiagNoiseMonitorClient: report" << std::endl;
-  this->setup();
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::getHistograms() {
-  if(!dbe_) return;
-
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::analyze(void) {
-  jevt_++;
-  if ( jevt_ % 10 == 0 ) {
-    if ( debug_ ) std::cout << "<HcalDetDiagNoiseMonitorClient::analyze>  Running analyze "<<std::endl;
-  }
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::createTests() {
-  if(!dbe_) return;
-  return;
-}
-
-void HcalDetDiagNoiseMonitorClient::resetAllME()
+HcalDetDiagNoiseMonitorClient::HcalDetDiagNoiseMonitorClient(std::string myname)
 {
-  if(!dbe_) return;
+  name_=myname;
+}
 
-  // Reset individual histograms  
-  if(!Online_) {
-    stringstream name;
-    name<<process_.c_str()<<rootFolder_<<"HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/MET_Rate_All_Events";
-    resetME(name.str().c_str(),dbe_);
-    name.str("");
-    name<<process_.c_str()<<rootFolder_<<"HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/HcalNoiseCategory/Hcal_Noise_MET_Rate_pass_selections";
-    resetME(name.str().c_str(),dbe_);
-    name.str("");
-    name<<process_.c_str()<<rootFolder_<<"HcalNoiseMonitor/MetExpressStreamNoiseMonitoring/SelectedForNoiseMonitoring/PhysicsCategory/Physics_MET_Rate_pass_selections";
-    resetME(name.str().c_str(),dbe_);
-    name.str("");
-  }
+HcalDetDiagNoiseMonitorClient::HcalDetDiagNoiseMonitorClient(std::string myname, const edm::ParameterSet& ps)
+{
+  name_=myname;
+  enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
+  debug_                 = ps.getUntrackedParameter<int>("debug",0);
+  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
+    prefixME_.append("/");
+  subdir_                = ps.getUntrackedParameter<string>("DetDiagNoiseMonitorFolder","DetDiagNoiseMonitorMonitor_Hcal/"); // DetDiagNoiseMonitorMonitor_Hcal/
+  if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
+    subdir_.append("/");
+  subdir_=prefixME_+subdir_;
 
+  cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
+  badChannelStatusMask_   = ps.getUntrackedParameter<int>("DetDiagNoiseMonitor_BadChannelStatusMask",
+							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));
+  
+  minerrorrate_ = ps.getUntrackedParameter<double>("DetDiagNoiseMonitor_minerrorrate",
+						   ps.getUntrackedParameter<double>("minerrorrate",0.05));
+  minevents_    = ps.getUntrackedParameter<int>("DetDiagNoiseMonitor_minevents",
+						ps.getUntrackedParameter<int>("minevents",1));
+  ProblemCells=0;
+  ProblemCellsByDepth=0;
+}
+
+void HcalDetDiagNoiseMonitorClient::analyze()
+{
+  if (debug_>2) std::cout <<"\tHcalDetDiagNoiseMonitorClient::analyze()"<<std::endl;
+  calculateProblems();
+}
+
+void HcalDetDiagNoiseMonitorClient::calculateProblems()
+{
+ if (debug_>2) std::cout <<"\t\tHcalDetDiagNoiseMonitorClient::calculateProblems()"<<std::endl;
+  if(!dqmStore_) return;
+  double totalevents=0;
+  int etabins=0, phibins=0, zside=0;
+  double problemvalue=0;
+
+  // Clear away old problems
+  if (ProblemCells!=0)
+    {
+      ProblemCells->Reset();
+      (ProblemCells->getTH2F())->SetMaximum(1.05);
+      (ProblemCells->getTH2F())->SetMinimum(0.);
+    }
+  for  (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
+    {
+      if (ProblemCellsByDepth->depth[d]!=0) 
+	{
+	  ProblemCellsByDepth->depth[d]->Reset();
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
+	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
+	}
+    }
+  enoughevents_=true;
+  // Get histograms that are used in testing
+  // currently none used,
+
+  std::vector<std::string> name = HcalEtaPhiHistNames();
+
+  // This is a sample of how to get a histogram from the task that can then be used for evaluation purposes
+  /*
+  TH2F* BadTiming[4];
+  TH2F* BadEnergy[4];
+  MonitorElement* me;
+  for (int i=0;i<4;++i)
+    {
+      string s=subdir_+name[i]+" Problem Bad Laser Timing";
+      me=dqmStore_->get(s.c_str());
+      if (me!=0) BadTiming[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadTiming[i], debug_);
+      else if (debug_>0) std::cout <<"<HcalDetDiagNoiseMonitorClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+      s=subdir_+name[i]+" Problem Bad Laser Energy";
+      me=dqmStore_->get(s.c_str());
+      if (me!=0) BadEnergy[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadEnergy[i], debug_);
+      else if (debug_>0) std::cout <<"<HcalDetDiagNoiseMonitorClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
+    }      
+  */
+
+  // Because we're clearing and re-forming the problem cell histogram here, we don't need to do any cute
+  // setting of the underflow bin to 0, and we can plot results as a raw rate between 0-1.
+  
+  for (unsigned int d=0;d<ProblemCellsByDepth->depth.size();++d)
+    {
+      if (ProblemCellsByDepth->depth[d]==0) continue;
+    
+      //totalevents=DigiPresentByDepth[d]->GetBinContent(0);
+      totalevents=0;
+      // Check underflow bins for events processed
+      /*
+      if (BadTiming[d]!=0) totalevents = BadTiming[d]->GetBinContent(0);
+      else if (BadEnergy[d]!=0) totalevents = BadEnergy[d]->GetBinContent(0);
+      */
+      //if (totalevents==0 || totalevents<minevents_) continue;
+      
+      totalevents=1; // temporary value pending removal of histogram normalization from tasks
+
+      etabins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsX();
+      phibins=(ProblemCellsByDepth->depth[d]->getTH2F())->GetNbinsY();
+      for (int eta=0;eta<etabins;++eta)
+	{
+	  int ieta=CalcIeta(eta,d+1);
+	  if (ieta==-9999) continue;
+	  for (int phi=0;phi<phibins;++phi)
+	    {
+	      problemvalue=0;
+	      /*
+	      if (BadTiming[d]!=0) problemvalue += BadTiming[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
+	      else if (BadEnergy[d]!=0) problemvalue += BadEnergy[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
+	      */
+	      if (problemvalue==0) continue;
+	      // problem value is a rate; we can normalize it here
+	      problemvalue = min(1.,problemvalue);
+	      
+	      zside=0;
+	      if (isHF(eta,d+1)) // shift ieta by 1 for HF
+		ieta<0 ? zside = -1 : zside = 1;
+
+	      // For problem cells that exceed our allowed rate,
+	      // set the values to -1 if the cells are already marked in the status database
+	      if (problemvalue>minerrorrate_)
+		{
+		  HcalSubdetector subdet=HcalEmpty;
+		  if (isHB(eta,d+1))subdet=HcalBarrel;
+		  else if (isHE(eta,d+1)) subdet=HcalEndcap;
+		  else if (isHF(eta,d+1)) subdet=HcalForward;
+		  else if (isHO(eta,d+1)) subdet=HcalOuter;
+		  HcalDetId hcalid(subdet, ieta, phi+1, (int)(d+1));
+		  if (badstatusmap.find(hcalid)!=badstatusmap.end())
+		    problemvalue=999; 		
+		}
+
+	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
+	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
+	    } // loop on phi
+	} // loop on eta
+    } // loop on depth
+
+  if (ProblemCells==0)
+    {
+      if (debug_>0) std::cout <<"<HcalDetDiagNoiseMonitorClient::analyze> ProblemCells histogram does not exist!"<<endl;
+      return;
+    }
+
+  // Normalization of ProblemCell plot, in the case where there are errors in multiple depths
+  etabins=(ProblemCells->getTH2F())->GetNbinsX();
+  phibins=(ProblemCells->getTH2F())->GetNbinsY();
+  for (int eta=0;eta<etabins;++eta)
+    {
+      for (int phi=0;phi<phibins;++phi)
+	{
+	  if (ProblemCells->getBinContent(eta+1,phi+1)>1. && ProblemCells->getBinContent(eta+1,phi+1)<999)
+	    ProblemCells->setBinContent(eta+1,phi+1,1.);
+	}
+    }
+
+  FillUnphysicalHEHFBins(*ProblemCellsByDepth);
+  FillUnphysicalHEHFBins(ProblemCells);
   return;
 }
 
-void HcalDetDiagNoiseMonitorClient::htmlOutput(int runNo, string htmlDir, string htmlName) {
-  if (showTiming_) {
-    cpu_timer.reset(); cpu_timer.start();
-  }
-  if (showTiming_) {
-    cpu_timer.stop();  std::cout <<"TIMER:: HcalDetDiagNoiseMonitorClient HTMLOUTPUT  -> "<<cpu_timer.cpuTime()<<std::endl;
-  }
-  return;
+void HcalDetDiagNoiseMonitorClient::beginJob()
+{
+  dqmStore_ = Service<DQMStore>().operator->();
+  if (debug_>0) 
+    {
+      std::cout <<"<HcalDetDiagNoiseMonitorClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
+      dqmStore_->showDirStructure();
+    }
+}
+void HcalDetDiagNoiseMonitorClient::endJob(){}
+
+void HcalDetDiagNoiseMonitorClient::beginRun(void)
+{
+  enoughevents_=false;
+  if (!dqmStore_) 
+    {
+      if (debug_>0) std::cout <<"<HcalDetDiagNoiseMonitorClient::beginRun> dqmStore does not exist!"<<std::endl;
+      return;
+    }
+  dqmStore_->setCurrentFolder(subdir_);
+  problemnames_.clear();
+
+  // Put the appropriate name of your problem summary here
+  ProblemCells=dqmStore_->book2D(" ProblemDetDiagNoiseMonitor",
+				 " Problem DetDiagNoiseMonitor Rate for all HCAL;ieta;iphi",
+				 85,-42.5,42.5,
+				 72,0.5,72.5);
+  problemnames_.push_back(ProblemCells->getName());
+  if (debug_>1)
+    std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
+  dqmStore_->setCurrentFolder(subdir_+"problem_DetDiagNoiseMonitor");
+  ProblemCellsByDepth = new EtaPhiHists();
+  ProblemCellsByDepth->setup(dqmStore_," Problem DetDiagNoiseMonitor Rate");
+  for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
+    problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
+  nevts_=0;
 }
 
-void HcalDetDiagNoiseMonitorClient::htmlExpertOutput(int runNo, string htmlDir, string htmlName) {
-  if (showTiming_) {
-    cpu_timer.reset(); cpu_timer.start();
-  }
-  if (showTiming_) {
-    cpu_timer.stop();  std::cout <<"TIMER:: HcalDetDiagNoiseMonitorClient  HTMLEXPERTOUTPUT ->"<<cpu_timer.cpuTime()<<std::endl;
-  }
-  return;
+void HcalDetDiagNoiseMonitorClient::endRun(void){analyze();}
+
+void HcalDetDiagNoiseMonitorClient::setup(void){}
+void HcalDetDiagNoiseMonitorClient::cleanup(void){}
+
+bool HcalDetDiagNoiseMonitorClient::hasErrors_Temp(void)
+{
+  if (!ProblemCells)
+    {
+      if (debug_>1) std::cout <<"<HcalDetDiagNoiseMonitorClient::hasErrors_Temp>  ProblemCells histogram does not exist!"<<std::endl;
+      return false;
+    }
+  int problemcount=0;
+  int ieta=-9999;
+
+  for (int depth=0;depth<4; ++depth)
+    {
+      int etabins  = (ProblemCells->getTH2F())->GetNbinsX();
+      int phibins  = (ProblemCells->getTH2F())->GetNbinsY();
+      for (int hist_eta=0;hist_eta<etabins;++hist_eta)
+        {
+          for (int hist_phi=0; hist_phi<phibins;++hist_phi)
+            {
+              ieta=CalcIeta(hist_eta,depth+1);
+	      if (ieta==-9999) continue;
+	      if (ProblemCellsByDepth->depth[depth]==0)
+		  continue;
+	      if (ProblemCellsByDepth->depth[depth]->getBinContent(hist_eta,hist_phi)>minerrorrate_)
+		++problemcount;
+
+	    } // for (int hist_phi=1;...)
+	} // for (int hist_eta=1;...)
+    } // for (int depth=0;...)
+
+  if (problemcount>0) return true;
+  return false;
 }
 
-void HcalDetDiagNoiseMonitorClient::loadHistograms(TFile* infile) {
-  return;
-}
+bool HcalDetDiagNoiseMonitorClient::hasWarnings_Temp(void){return false;}
+bool HcalDetDiagNoiseMonitorClient::hasOther_Temp(void){return false;}
+bool HcalDetDiagNoiseMonitorClient::test_enabled(void){return true;}
+
+
+void HcalDetDiagNoiseMonitorClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& myqual)
+{
+  // This gets called by HcalMonitorClient
+  // trigger primitives don't yet contribute to channel status (though they could...)
+  // see dead or hot cell code for an example
+
+} //void HcalDetDiagNoiseMonitorClient::updateChannelStatus
+
+
