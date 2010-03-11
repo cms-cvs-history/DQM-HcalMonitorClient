@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/11 04:57:48 $
- * $Revision: 1.1.2.8 $
+ * $Date: 2010/03/11 11:21:16 $
+ * $Revision: 1.1.2.9 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -99,6 +99,13 @@ void HcalRawDataClient::calculateProblems()
 	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMaximum(1.05);
 	  (ProblemCellsByDepth->depth[d]->getTH2F())->SetMinimum(0.);
 	}
+      for (unsigned int eta=0; eta<85;++eta) //spans largest ieta breadth
+	{
+	  for (unsigned int phi=0;phi<72;++phi) //spans largest (only!) iphi breadth
+	    {
+	      problemcount[eta][phi][d]=0;
+	    }
+	}
     }
   enoughevents_=true;
   //Get the plots showing raw data errors,
@@ -134,7 +141,6 @@ void HcalRawDataClient::calculateProblems()
 	      if (debug_>0) cout <<"problemvalue = "<<problemvalue<<"  ieta = "<<filleta<<"  iphi = "<<phi+1<<"  d = "<<d+1<<endl;
 	      ProblemCellsByDepth->depth[d]->Fill(filleta,phi+1,problemvalue);
 		ProblemCells->Fill(filleta,phi+1,problemvalue); 
-
 
 	      if (problemvalue==0) continue;
 	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
