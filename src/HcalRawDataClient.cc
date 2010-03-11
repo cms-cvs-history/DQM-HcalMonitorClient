@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/10 14:21:48 $
- * $Revision: 1.1.2.6 $
+ * $Date: 2010/03/10 16:27:57 $
+ * $Revision: 1.1.2.7 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -399,22 +399,14 @@ void HcalRawDataClient::fillProblemCountArray(void){
   bool CheckChannSumm_DataIntegrityCheck_      = false;
   bool CheckChann_DataIntegrityCheck_[NUMDCCS] ; 
 
-  if (meCDFErrorFound_!=0)
-    CheckmeCDFErrorFound_                   = (meCDFErrorFound_                 ->GetEffectiveEntries()!=0);  
-  if (meDCCEventFormatError_!=0)
-    CheckmeDCCEventFormatError_             = (meDCCEventFormatError_           ->GetEffectiveEntries()!=0);  
-  if (meOrNSynch_!=0)
-    CheckmeOrNSynch_			       = (meOrNSynch_			   ->GetEffectiveEntries()!=0);
-  if (meBCNSynch_!=0)
-    CheckmeBCNSynch_			       = (meBCNSynch_			   ->GetEffectiveEntries()!=0);
-  if (meEvtNumberSynch_!=0)
-    CheckmeEvtNumberSynch_		       = (meEvtNumberSynch_		   ->GetEffectiveEntries()!=0);
-  if (LRBDataCorruptionIndicators_!=0)
-    CheckLRBDataCorruptionIndicators_       = (LRBDataCorruptionIndicators_     ->GetEffectiveEntries()!=0);
-  if (HalfHTRDataCorruptionIndicators_!=0)
-    CheckHalfHTRDataCorruptionIndicators_   = (HalfHTRDataCorruptionIndicators_ ->GetEffectiveEntries()!=0);
-  if (ChannSumm_DataIntegrityCheck_!=0)
-    CheckChannSumm_DataIntegrityCheck_      = (ChannSumm_DataIntegrityCheck_);
+  if (meCDFErrorFound_!=0)                  CheckmeCDFErrorFound_                   = true;
+  if (meDCCEventFormatError_!=0)            CheckmeDCCEventFormatError_             = true;
+  if (meOrNSynch_!=0)                       CheckmeOrNSynch_			    = true;
+  if (meBCNSynch_!=0)                       CheckmeBCNSynch_			    = true;
+  if (meEvtNumberSynch_!=0)                 CheckmeEvtNumberSynch_		    = true;
+  if (LRBDataCorruptionIndicators_!=0)      CheckLRBDataCorruptionIndicators_       = true;
+  if (HalfHTRDataCorruptionIndicators_!=0)  CheckHalfHTRDataCorruptionIndicators_   = true;
+  if (ChannSumm_DataIntegrityCheck_!=0)     CheckChannSumm_DataIntegrityCheck_      = true;
 
   int fed2offset=0;
   int fed3offset=0;
@@ -422,102 +414,105 @@ void HcalRawDataClient::fillProblemCountArray(void){
   int spg3offset=0;
   int chn2offset=0;
 
-  
   //Project all types of errors in these two plots onto
   //the x axis to get total errors per FED.
   TH1D* ProjXmeCDFErrorFound_       = 0;
-  if (meCDFErrorFound_!=0)
-    meCDFErrorFound_      ->ProjectionX();
+  bool CheckProjXmeCDFErrorFound_ = false;
+  if (CheckmeCDFErrorFound_)
+    ProjXmeCDFErrorFound_=meCDFErrorFound_->ProjectionX();
+  if (ProjXmeCDFErrorFound_!=0) CheckProjXmeCDFErrorFound_=true;
   TH1D* ProjXmeDCCEventFormatError_ = 0;
-  if (meDCCEventFormatError_!=0)
-    meDCCEventFormatError_->ProjectionX();
+  bool CheckProjXmeDCCEventFormatError_ = false;
+  if (CheckmeDCCEventFormatError_)
+    ProjXmeDCCEventFormatError_=meDCCEventFormatError_->ProjectionX();
+  if (ProjXmeDCCEventFormatError_!=0) CheckProjXmeDCCEventFormatError_ = true;
 
   for (int dccid=FEDNumbering::MINHCALFEDID; dccid<=FEDNumbering::MAXHCALFEDID; dccid++) {
     dcc_=dccid-FEDNumbering::MINHCALFEDID; // Numbering FEDS [0:31] is more useful for array indices.
-    if (Chann_DataIntegrityCheck_[dcc_]!=0)
-      CheckChann_DataIntegrityCheck_[dcc_] = (Chann_DataIntegrityCheck_[dcc_]);//->GetEffectiveEntries()!=0) ;
-
-    if (CheckmeCDFErrorFound_) {
+    if (Chann_DataIntegrityCheck_[dcc_]!=0) 
+      CheckChann_DataIntegrityCheck_[dcc_] = true;
+    
+    if (CheckProjXmeCDFErrorFound_) {
       n = ProjXmeCDFErrorFound_->GetBinContent(1+dcc_);
       if (n>0.0) mapDCCproblem(dcc_,n);
     }
-    if (CheckmeDCCEventFormatError_) {
+    if (CheckProjXmeDCCEventFormatError_) {
       n = ProjXmeDCCEventFormatError_->GetBinContent(1+dcc_);
       if (n>0.0) mapDCCproblem(dcc_,n);
     }
-
+  
     fed3offset = 1 + (4*dcc_); //3 bins, plus one of margin, each DCC (FED)
     fed2offset = 1 + (3*dcc_); //2 bins, plus one of margin, each DCC (FED)
     for (int spigot=0; spigot<NUMSPGS; spigot++) {
       
       if (CheckmeOrNSynch_) {
-	n = meOrNSynch_->GetBinContent(1+dcc_, 1+spigot);
-	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+  	n = meOrNSynch_->GetBinContent(1+dcc_, 1+spigot);
+  	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       if (CheckmeBCNSynch_) {
-	n = meBCNSynch_->GetBinContent(1+dcc_, 1+spigot);
-	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+  	n = meBCNSynch_->GetBinContent(1+dcc_, 1+spigot);
+  	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       if (CheckmeEvtNumberSynch_) {
-	n = meEvtNumberSynch_->GetBinContent(1+dcc_, 1+spigot);
-	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+  	n = meEvtNumberSynch_->GetBinContent(1+dcc_, 1+spigot);
+  	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       spg3offset = 1 + (4*spigot); //3 bins, plus one of margin, each spigot
       if (CheckLRBDataCorruptionIndicators_    ){
-	n=0.0; //Sum errors of all ten types 
-	n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset,
-						       spg3offset);
-	for (int xbin=1; xbin<=3; xbin++) {
-	  for (int ybin=1; ybin<=3; ybin++) {
-	    n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
-							   spg3offset+ybin);
-	  }
-	}
-	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+  	n=0.0; //Sum errors of all ten types 
+  	n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset,
+  						       spg3offset);
+  	for (int xbin=1; xbin<=3; xbin++) {
+  	  for (int ybin=1; ybin<=3; ybin++) {
+  	    n+=LRBDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
+  							   spg3offset+ybin);
+  	  }
+  	}
+  	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       if (CheckHalfHTRDataCorruptionIndicators_){
-	n=0.0; //Sum errors of all nine types 
-	for (int xbin=1; xbin<=3; xbin++) {
-	  for (int ybin=1; ybin<=3; ybin++) {
-	    n+=HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
-							       spg3offset+ybin);
-	  }
-	}
-	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
+  	n=0.0; //Sum errors of all nine types 
+  	for (int xbin=1; xbin<=3; xbin++) {
+  	  for (int ybin=1; ybin<=3; ybin++) {
+  	    n+=HalfHTRDataCorruptionIndicators_->GetBinContent(fed3offset+xbin,
+  							       spg3offset+ybin);
+  	  }
+  	}
+  	if (n>0.0) mapHTRproblem(dcc_,spigot,n);
       }
       spg2offset = 1 + (3*spigot); //2 bins, plus one of margin, each spigot
       if (CheckChann_DataIntegrityCheck_[dcc_] &&
-	  CheckChannSumm_DataIntegrityCheck_      ){
-	//Each spigot may be configured for its own number of TimeSlices, per event.
-	//Keep an array of the values:
-	numTS_[(dcc_*NUMSPGS)+spigot]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
-										   spg2offset+1);
-	for (int chnnum=1; chnnum<HTRCHANMAX; chnnum++) {
-	  chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
-	  n = 0.0;
-	  //Sum errors of all types, 
-	  //but not !DV, at xbin==1, ybin==2.
-	  //Weight less if error can occur every timeslice
-	  // or between any two timeslices
-	  float tsFactor=numTS_[spigot +(dcc_*NUMSPGS)]; 
-	  float CRweight = 0.0;
-	  float Erweight = 0.0;
-	  if (tsFactor>0) {
-	    CRweight = (1.0 / (tsFactor-1.0));
-	    Erweight = (1.0 / (tsFactor    ));
-	  }
-	  int xbin=1; int ybin=1; // Timeslices per event check for error here
-	  n += Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
-							      spg2offset+ybin);
-	  xbin=2; //move right one bin: CapID Rotation here
-	  n += CRweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
-									 spg2offset+ybin);
-	  ybin=2; //move up one bin: Er bit here
-	  n += Erweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
-									 spg2offset+ybin);
-	  if  (n>=0.0)
-	    mapChannproblem(dcc_,spigot,chnnum,n);
-	} //loop over channels
+  	  CheckChannSumm_DataIntegrityCheck_      ){
+  	//Each spigot may be configured for its own number of TimeSlices, per event.
+  	//Keep an array of the values:
+  	numTS_[(dcc_*NUMSPGS)+spigot]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
+  										   spg2offset+1);
+  	for (int chnnum=1; chnnum<HTRCHANMAX; chnnum++) {
+  	  chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
+  	  n = 0.0;
+  	  //Sum errors of all types, 
+  	  //but not !DV, at xbin==1, ybin==2.
+  	  //Weight less if error can occur every timeslice
+  	  // or between any two timeslices
+  	  float tsFactor=numTS_[spigot +(dcc_*NUMSPGS)]; 
+  	  float CRweight = 0.0;
+  	  float Erweight = 0.0;
+  	  if (tsFactor>0) {
+  	    CRweight = (1.0 / (tsFactor-1.0));
+  	    Erweight = (1.0 / (tsFactor    ));
+  	  }
+  	  int xbin=1; int ybin=1; // Timeslices per event check for error here
+  	  n += Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+  							      spg2offset+ybin);
+  	  xbin=2; //move right one bin: CapID Rotation here
+  	  n += CRweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+  									 spg2offset+ybin);
+  	  ybin=2; //move up one bin: Er bit here
+  	  n += Erweight * Chann_DataIntegrityCheck_[dcc_]->GetBinContent(chn2offset+xbin,
+  									 spg2offset+ybin);
+  	  if  (n>=0.0)
+  	    mapChannproblem(dcc_,spigot,chnnum,n);
+  	} //loop over channels
       } //check to see if FED had any channel problems  
     } //loop over spigot
   } //loop over dccid
