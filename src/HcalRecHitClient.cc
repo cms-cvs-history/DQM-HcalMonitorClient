@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/08 19:57:16 $
- * $Revision: 1.47.4.8 $
+ * $Date: 2010/03/09 22:26:17 $
+ * $Revision: 1.47.4.9 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -44,7 +44,7 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
 											0)); // identify channel status values to mask
 
   minerrorrate_ = ps.getUntrackedParameter<double>("RecHit_minerrorrate",
-						   ps.getUntrackedParameter<double>("minerrorrate",0.05));
+						   ps.getUntrackedParameter<double>("minerrorrate",0.01));
   minevents_    = ps.getUntrackedParameter<int>("RecHit_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   enoughevents_=false;

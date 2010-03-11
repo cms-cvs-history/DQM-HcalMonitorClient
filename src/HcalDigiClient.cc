@@ -11,8 +11,8 @@
 /*
  * \file HcalDigiClient.cc
  * 
- * $Date: 2010/03/04 23:43:51 $
- * $Revision: 1.61.4.2 $
+ * $Date: 2010/03/05 14:53:28 $
+ * $Revision: 1.61.4.3 $
  * \author J. Temple
  * \brief DigiClient class
  */
@@ -44,7 +44,7 @@ HcalDigiClient::HcalDigiClient(std::string myname, const edm::ParameterSet& ps)
 											(1<<HcalChannelStatus::HcalCellDead))); // identify channel status values to mask
   
   minerrorrate_ = ps.getUntrackedParameter<double>("Digi_minerrorrate",
-						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
+						   ps.getUntrackedParameter<double>("minerrorrate",0.05));
   minevents_    = ps.getUntrackedParameter<int>("Digi_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   ProblemCellsByDepth=0;

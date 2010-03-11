@@ -11,8 +11,8 @@
 /*
  * \file HcalNZSClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.1.2.1 $
+ * $Date: 2010/03/05 16:28:20 $
+ * $Revision: 1.1.2.2 $
  * \author J. Temple
  * \brief Hcal NZS Client class
  */
@@ -43,7 +43,7 @@ HcalNZSClient::HcalNZSClient(std::string myname, const edm::ParameterSet& ps)
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));
   
   minerrorrate_ = ps.getUntrackedParameter<double>("NZS_minerrorrate",
-						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
+						   ps.getUntrackedParameter<double>("minerrorrate",0.01));
   minevents_    = ps.getUntrackedParameter<int>("NZS_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   ProblemCells=0;

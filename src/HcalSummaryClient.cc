@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/08 10:34:47 $
- * $Revision: 1.89.2.5 $
+ * $Date: 2010/03/09 22:26:16 $
+ * $Revision: 1.89.2.6 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -59,7 +59,7 @@ HcalSummaryClient::HcalSummaryClient(std::string myname, const edm::ParameterSet
 }
 
 void HcalSummaryClient::analyze(int LS)
-{
+{ 
   if (debug_>2) std::cout <<"\tHcalSummaryClient::analyze()"<<std::endl;
 
   // 
