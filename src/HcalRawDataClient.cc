@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/11 17:10:17 $
- * $Revision: 1.1.2.10 $
+ * $Date: 2010/03/11 20:11:40 $
+ * $Revision: 1.1.2.11 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -78,7 +78,7 @@ void HcalRawDataClient::calculateProblems()
   double totalevents=0;
   int etabins=0, phibins=0, zside=0;
   double problemvalue=0;
-  int filleta=-9999;
+  
   //Get number of events to normalize by
   MonitorElement* me;
   me = dqmStore_->get(subdir_+"Events_Processed_Task_Histogram");
@@ -134,13 +134,6 @@ void HcalRawDataClient::calculateProblems()
 	      problemvalue=0;
 	      problemvalue=((uint64_t) problemcount[eta][phi][d] );
 	      if (problemvalue==0) continue;
-	      filleta=CalcIeta(eta,d+1); // calculate ieta from eta counter
-	      // Offset true ieta for HF plotting
-	      if (isHF(eta,d+1)) 
-		filleta<0 ? filleta-- : filleta++;
-	      if (debug_>0) cout <<"problemvalue = "<<problemvalue<<"  ieta = "<<filleta<<"  iphi = "<<phi+1<<"  d = "<<d+1<<endl;
-
-	      if (problemvalue==0) continue;
 	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
 	      problemvalue = min(1.,problemvalue);
 	      
@@ -148,6 +141,7 @@ void HcalRawDataClient::calculateProblems()
 	      if (isHF(eta,d+1)) // shift ieta by 1 for HF
 	      	ieta<0 ? zside = -1 : zside = 1;
 	      
+	      if (debug_>0) std::cout <<"problemvalue = "<<problemvalue<<"  ieta = "<<zside<<"  iphi = "<<phi+1<<"  d = "<<d+1<<std::endl;
 	      // For problem cells that exceed our allowed rate,
 	      // set the values to -1 if the cells are already marked in the status database
 	      if (problemvalue>minerrorrate_)
