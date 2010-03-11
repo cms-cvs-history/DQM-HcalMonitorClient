@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/11 11:21:16 $
- * $Revision: 1.1.2.9 $
+ * $Date: 2010/03/11 17:10:17 $
+ * $Revision: 1.1.2.10 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -103,7 +103,7 @@ void HcalRawDataClient::calculateProblems()
 	{
 	  for (unsigned int phi=0;phi<72;++phi) //spans largest (only!) iphi breadth
 	    {
-	      problemcount[eta][phi][d]=0;
+	      problemcount[eta][phi][d]=0.0;
 	    }
 	}
     }
@@ -139,8 +139,6 @@ void HcalRawDataClient::calculateProblems()
 	      if (isHF(eta,d+1)) 
 		filleta<0 ? filleta-- : filleta++;
 	      if (debug_>0) cout <<"problemvalue = "<<problemvalue<<"  ieta = "<<filleta<<"  iphi = "<<phi+1<<"  d = "<<d+1<<endl;
-	      ProblemCellsByDepth->depth[d]->Fill(filleta,phi+1,problemvalue);
-		ProblemCells->Fill(filleta,phi+1,problemvalue); 
 
 	      if (problemvalue==0) continue;
 	      problemvalue/=totalevents; // problem value is a rate; should be between 0 and 1
@@ -148,22 +146,22 @@ void HcalRawDataClient::calculateProblems()
 	      
 	      zside=0;
 	      if (isHF(eta,d+1)) // shift ieta by 1 for HF
-		ieta<0 ? zside = -1 : zside = 1;
-
+	      	ieta<0 ? zside = -1 : zside = 1;
+	      
 	      // For problem cells that exceed our allowed rate,
 	      // set the values to -1 if the cells are already marked in the status database
 	      if (problemvalue>minerrorrate_)
-		{
-		  HcalSubdetector subdet=HcalEmpty;
-		  if (isHB(eta,d+1))subdet=HcalBarrel;
-		  else if (isHE(eta,d+1)) subdet=HcalEndcap;
-		  else if (isHF(eta,d+1)) subdet=HcalForward;
-		  else if (isHO(eta,d+1)) subdet=HcalOuter;
-		  HcalDetId hcalid(subdet, ieta, phi+1, (int)(d+1));
-		  if (badstatusmap.find(hcalid)!=badstatusmap.end())
-		    problemvalue=999; 		
-		}
-
+	      	{
+	      	  HcalSubdetector subdet=HcalEmpty;
+	      	  if (isHB(eta,d+1))subdet=HcalBarrel;
+	      	  else if (isHE(eta,d+1)) subdet=HcalEndcap;
+	      	  else if (isHF(eta,d+1)) subdet=HcalForward;
+	      	  else if (isHO(eta,d+1)) subdet=HcalOuter;
+	      	  HcalDetId hcalid(subdet, ieta, phi+1, (int)(d+1));
+	      	  if (badstatusmap.find(hcalid)!=badstatusmap.end())
+	      	    problemvalue=999; 		
+	      	}
+	      
 	      ProblemCellsByDepth->depth[d]->setBinContent(eta+1,phi+1,problemvalue);
 	      if (ProblemCells!=0) ProblemCells->Fill(ieta+zside,phi+1,problemvalue);
 	    } // loop on phi
@@ -495,9 +493,9 @@ void HcalRawDataClient::fillProblemCountArray(void){
   	  CheckChannSumm_DataIntegrityCheck_      ){
   	//Each spigot may be configured for its own number of TimeSlices, per event.
   	//Keep an array of the values:
-  	numTS_[(dcc_*NUMSPGS)+spigot]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
-  										   spg2offset+1);
-  	for (int chnnum=1; chnnum<HTRCHANMAX; chnnum++) {
+  	numTS_[(dcc_*NUMSPGS)+spigot]=-1.0 * ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
+											  spg2offset+1);
+  	for (int chnnum=0; chnnum<HTRCHANMAX; chnnum++) {
   	  chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
   	  n = 0.0;
   	  //Sum errors of all types, 
@@ -613,76 +611,77 @@ void HcalRawDataClient::mapChannproblem(int dcc, int spigot, int htrchan, float 
 
 
 void HcalRawDataClient::normalizeHardwareSpaceHistos(void){
-  // Get histograms that are used in testing
-  getHardwareSpaceHistos();
-
-  int fed2offset=0;
-  int spg2offset=0;
-  int chn2offset=0;
-  float tsFactor=1.0;
-  float val=0.0;
-
-  if (!ChannSumm_DataIntegrityCheck_) return;
-  //Normalize by the number of events each channel spake. (Handles ZS!)
-  for (int fednum=0;fednum<NUMDCCS;fednum++) {
-    fed2offset = 1 + (3*fednum); //2 bins, plus one of margin, each DCC 
-    for (int spgnum=0; spgnum<15; spgnum++) {
-      spg2offset = 1 + (3*spgnum); //2 bins, plus one of margin, each spigot
-      numTS_[(fednum*NUMSPGS)+spgnum]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
-										   spg2offset+1);
-
-      for (int xbin=1; xbin<=2; xbin++) {
-  	for (int ybin=1; ybin<=2; ybin++) {
-  	  val = ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset+xbin,
-  							     spg2offset+ybin);
-	  if ( (val) && (nevts_) ) {
-	    //Lower pair of bins don't scale with just the timesamples per event.
-	    if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
-	    else {
-	      if (xbin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]-1;
-	      else tsFactor=1.0;
-	    }
-	    if (tsFactor)
-	      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset+xbin,
-							   spg2offset+ybin,
-							   val/(nevts_*tsFactor));
-	    val=0.0;
-	  }
-  	}
-      }
-      //Clear the numTS, which clutter the final plot.
-      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
-						   spg2offset  , 0.0);
-      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
-						   spg2offset+1, 0.0);
-
-      if (!Chann_DataIntegrityCheck_[fednum]) continue;  
-      for (int chnnum=0; chnnum<24; chnnum++) {
-  	chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
-	if (! (Chann_DataIntegrityCheck_[fednum]))  
-	  continue;
-  	for (int xbin=1; xbin<=2; xbin++) {
-  	  for (int ybin=1; ybin<=2; ybin++) {
-  	    val = Chann_DataIntegrityCheck_[fednum]->GetBinContent(chn2offset+xbin,
-  								   spg2offset+ybin);
-  	    if ( (val) && (nevts_) ) {
-	      //Lower pair of bins don't scale with just the timesamples per event.
-	      if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
-	      else {
-		if (xbin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]-1;
-		else tsFactor=1.0;
-	      }
-	      if (tsFactor)
-		Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset+xbin,
-								 spg2offset+ybin,
-								 val/(nevts_*tsFactor));
-	    }
-  	  }
-  	}
-	//Remove the channel's event count from sight.
-	Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset,
-							 spg2offset,0.0);
-      }
-    }
-  }  
+  /////Not ready for this yet.
+//  // Get histograms that are used in testing
+//  getHardwareSpaceHistos();
+//
+//  int fed2offset=0;
+//  int spg2offset=0;
+//  int chn2offset=0;
+//  float tsFactor=1.0;
+//  float val=0.0;
+//
+//  if (!ChannSumm_DataIntegrityCheck_) return;
+//  //Normalize by the number of events each channel spake. (Handles ZS!)
+//  for (int fednum=0;fednum<NUMDCCS;fednum++) {
+//    fed2offset = 1 + (3*fednum); //2 bins, plus one of margin, each DCC 
+//    for (int spgnum=0; spgnum<15; spgnum++) {
+//      spg2offset = 1 + (3*spgnum); //2 bins, plus one of margin, each spigot
+//      numTS_[(fednum*NUMSPGS)+spgnum]=ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset,
+//										   spg2offset+1);
+//
+//      for (int xbin=1; xbin<=2; xbin++) {
+//  	for (int ybin=1; ybin<=2; ybin++) {
+//  	  val = ChannSumm_DataIntegrityCheck_->GetBinContent(fed2offset+xbin,
+//  							     spg2offset+ybin);
+//	  if ( (val) && (nevts_) ) {
+//	    //Lower pair of bins don't scale with just the timesamples per event.
+//	    if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
+//	    else {
+//	      if (xbin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]-1;
+//	      else tsFactor=1.0;
+//	    }
+//	    if (tsFactor)
+//	      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset+xbin,
+//							   spg2offset+ybin,
+//							   val/(nevts_*tsFactor));
+//	    val=0.0;
+//	  }
+//  	}
+//      }
+//      //Clear the numTS, which clutter the final plot.
+//      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
+//						   spg2offset  , 0.0);
+//      ChannSumm_DataIntegrityCheck_->SetBinContent(fed2offset  ,
+//						   spg2offset+1, 0.0);
+//
+//      if (!Chann_DataIntegrityCheck_[fednum]) continue;  
+//      for (int chnnum=0; chnnum<24; chnnum++) {
+//  	chn2offset = 1 + (3*chnnum); //2 bins, plus one of margin, each channel
+//	if (! (Chann_DataIntegrityCheck_[fednum]))  
+//	  continue;
+//  	for (int xbin=1; xbin<=2; xbin++) {
+//  	  for (int ybin=1; ybin<=2; ybin++) {
+//  	    val = Chann_DataIntegrityCheck_[fednum]->GetBinContent(chn2offset+xbin,
+//  								   spg2offset+ybin);
+//  	    if ( (val) && (nevts_) ) {
+//	      //Lower pair of bins don't scale with just the timesamples per event.
+//	      if (ybin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]; 
+//	      else {
+//		if (xbin==2) tsFactor=numTS_[spgnum +(fednum*NUMSPGS)]-1;
+//		else tsFactor=1.0;
+//	      }
+//	      if (tsFactor)
+//		Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset+xbin,
+//								 spg2offset+ybin,
+//								 val/(nevts_*tsFactor));
+//	    }
+//  	  }
+//  	}
+//	//Remove the channel's event count from sight.
+//	Chann_DataIntegrityCheck_[fednum]->SetBinContent(chn2offset,
+//							 spg2offset,0.0);
+//      }
+//    }
+//  }  
 }
