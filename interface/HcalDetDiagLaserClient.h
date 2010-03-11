@@ -34,9 +34,6 @@ class HcalDetDiagLaserClient : public HcalBaseDQClient {
 
  private:
   int nevts_;
-
-  EtaPhiHists* ProblemsByDepthZS_;
-  EtaPhiHists* ProblemsByDepthNZS_;
 };
 
 #endif

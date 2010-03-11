@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/10 16:28:13 $
- * $Revision: 1.92.2.15 $
+ * $Date: 2010/03/10 17:21:12 $
+ * $Revision: 1.92.2.16 $
  * \author J. Temple
  * 
  */
@@ -21,6 +21,7 @@
 #include "DQM/HcalMonitorClient/interface/HcalDetDiagLaserClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDetDiagLEDClient.h"
 #include "DQM/HcalMonitorClient/interface/HcalDetDiagNoiseMonitorClient.h"
+#include "DQM/HcalMonitorClient/interface/HcalDetDiagTimingClient.h"
 
 #include "FWCore/Framework/interface/Run.h"
 #include "FWCore/Framework/interface/LuminosityBlock.h"
@@ -115,6 +116,11 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
     clients_.push_back(new HcalDetDiagLEDClient((string)"DetDiagLEDMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagNoiseMonitor")!=enabledClients_.end())
     clients_.push_back(new HcalDetDiagNoiseMonitorClient((string)"DetDiagNoiseMonitor",ps));
+  if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagTimingMonitor")!=enabledClients_.end())
+    clients_.push_back(new HcalDetDiagTimingClient((string)"DetDiagTimingMonitor",ps));
+
+
+
 
   if (find(enabledClients_.begin(), enabledClients_.end(),"Summary")!=enabledClients_.end())
     summaryClient_ = new HcalSummaryClient((string)"ReportSummaryClient",ps);

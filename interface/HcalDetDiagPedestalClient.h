@@ -34,9 +34,6 @@ class HcalDetDiagPedestalClient : public HcalBaseDQClient {
 
  private:
   int nevts_;
-
-  EtaPhiHists* ProblemsByDepthZS_;
-  EtaPhiHists* ProblemsByDepthNZS_;
 };
 
 #endif

@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagNoiseMonitorClient.cc
  * 
- * $Date: 2010/03/10 11:56:58 $
- * $Revision: 1.3.4.1 $
+ * $Date: 2010/03/10 14:21:17 $
+ * $Revision: 1.1.4.1 $
  * \author J. Temple
  * \brief Hcal DetDiagNoiseMonitor Client class
  */
@@ -33,7 +33,7 @@ HcalDetDiagNoiseMonitorClient::HcalDetDiagNoiseMonitorClient(std::string myname,
   prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DetDiagNoiseMonitorFolder","DetDiagNoiseMonitorMonitor_Hcal/"); // DetDiagNoiseMonitorMonitor_Hcal/
+  subdir_                = ps.getUntrackedParameter<string>("DetDiagNoiseMonitorFolder","DetDiagNoiseMonitor_Hcal/"); // DetDiagNoiseMonitor_Hcal/
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;

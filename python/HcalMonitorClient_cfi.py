@@ -48,6 +48,7 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                                                                     "DetDiagLaserMonitor",
                                                                     "DetDiagLEDMonitor",
                                                                     "DetDiagNoiseMonitor",
+                                                                    "DetDiagTimingMonitor",
                                                                     "Summary"
                                                                     ]
                                                                    ),
