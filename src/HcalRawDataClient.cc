@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/10 16:27:57 $
- * $Revision: 1.1.2.7 $
+ * $Date: 2010/03/11 04:57:48 $
+ * $Revision: 1.1.2.8 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -48,7 +48,7 @@ HcalRawDataClient::HcalRawDataClient(std::string myname, const edm::ParameterSet
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));
   
   minerrorrate_ = ps.getUntrackedParameter<double>("RawData_minerrorrate",
-						   ps.getUntrackedParameter<double>("minerrorrate",0.25));
+						   ps.getUntrackedParameter<double>("minerrorrate",0.01));
   minevents_    = ps.getUntrackedParameter<int>("RawData_minevents",
 						ps.getUntrackedParameter<int>("minevents",1));
   ProblemCells=0;
@@ -269,6 +269,10 @@ void HcalRawDataClient::beginRun(void)
     std::cout << "Tried to create ProblemCells Monitor Element in directory "<<subdir_<<"  \t  Failed?  "<<(ProblemCells==0)<<std::endl;
   dqmStore_->setCurrentFolder(subdir_+"problem_rawdata");
   ProblemCellsByDepth = new EtaPhiHists();
+
+  ProblemCells->getTH2F()->SetMinimum(0);
+  ProblemCells->getTH2F()->SetMaximum(1.05);
+
   ProblemCellsByDepth->setup(dqmStore_," Problem Raw Data Rate");
   for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
     problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
