@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/10 17:21:12 $
- * $Revision: 1.92.2.16 $
+ * $Date: 2010/03/11 09:34:49 $
+ * $Revision: 1.92.2.17 $
  * \author J. Temple
  * 
  */
@@ -69,7 +69,7 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   updateTime_ = ps.getUntrackedParameter<int>("UpdateTime",0);
   baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
   htmlUpdateTime_ = ps.getUntrackedParameter<int>("htmlUpdateTime", 0);
-  htmlFirstUpdate_ = ps.getUntrackedParameter<int>("htmlFirstUpdate",15);
+  htmlFirstUpdate_ = ps.getUntrackedParameter<int>("htmlFirstUpdate",20);
   databasedir_   = ps.getUntrackedParameter<std::string>("databaseDir","");
   databaseUpdateTime_ = ps.getUntrackedParameter<int>("databaseUpdateTime",0);
   databaseFirstUpdate_ = ps.getUntrackedParameter<int>("databaseFirstUpdate",10);
@@ -149,8 +149,8 @@ void HcalMonitorClient::beginJob(void)
   jevt_=0;
 
   current_time_ = time(NULL);
-  last_time_html_ = current_time_;
-  last_time_db_ = current_time_;
+  last_time_html_ = 0; 
+  last_time_db_ = 0;   
 
   // get hold of back-end interface
 
@@ -281,11 +281,8 @@ void HcalMonitorClient::beginRun()
 
   if (dqmStore_==0 || ChannelStatus!=0) return;
   dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
-  cout <<"BR TRY"<<endl;
   ChannelStatus=new EtaPhiHists;
-  cout <<"OK1"<<endl;
   ChannelStatus->setup(dqmStore_,"ChannelStatus");
-  cout <<"YES"<<endl;
   stringstream x;
   for (unsigned int d=0;d<ChannelStatus->depth.size();++d)
     {
@@ -334,7 +331,7 @@ void HcalMonitorClient::analyze(int LS)
 void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const EventSetup &c) 
 {
   if (debug_>0) std::cout <<"<HcalMonitorClient::endLuminosityBlock>"<<std::endl;
-  
+  current_time_ = time(NULL);
   if (updateTime_>0)
     {
       if ((current_time_-last_time_update_)<60*updateTime_)
@@ -357,10 +354,11 @@ void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const Event
 	  last_time_db_=current_time_;
 	}
     }
+
   if (htmlUpdateTime_>0)
     {
       if (
-	  (last_time_html_==0 && (current_time_-last_time_html_)>=60*databaseFirstUpdate_)
+	  (last_time_html_==0 && (current_time_-last_time_html_)>=60*htmlFirstUpdate_)
 	  // 
 	  ||((current_time_-last_time_html_)>=60*htmlUpdateTime_)
 	  ) // htmlUpdateTime_ in minutes
@@ -380,7 +378,8 @@ void HcalMonitorClient::endRun(void)
   if (databasedir_.size()>0)
     this->writeChannelStatus();
   // writeHtml takes longer; run it last 
-  if (baseHtmlDir_.size()>0)
+  // Also, don't run it if htmlUpdateTime_>0 -- it should have already been run
+  if (baseHtmlDir_.size()>0 && htmlUpdateTime_==0)
     this->writeHtml();
 }
 
@@ -428,8 +427,9 @@ void HcalMonitorClient::writeHtml()
   gStyle->SetPalette(1);
 
   char tmp[20];
-  if(run_!=-1) sprintf(tmp, "DQM_Hcal_R%09d", run_);
-  else sprintf(tmp, "DQM_Hcal_R%09d", 0);
+  
+  if(run_!=-1) sprintf(tmp, "DQM_%s_R%09d", prefixME_.substr(0,prefixME_.size()-1).c_str(),run_);
+  else sprintf(tmp, "DQM_%s_R%09d", prefixME_.substr(0,prefixME_.size()-1).c_str(),0);
   string htmlDir = baseHtmlDir_ + "/" + tmp + "/";
   system(("/bin/mkdir -p " + htmlDir).c_str());
 
