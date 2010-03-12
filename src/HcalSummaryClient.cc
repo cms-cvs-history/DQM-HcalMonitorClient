@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/09 22:26:16 $
- * $Revision: 1.89.2.6 $
+ * $Date: 2010/03/11 11:20:14 $
+ * $Revision: 1.89.2.7 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -31,6 +31,8 @@ HcalSummaryClient::HcalSummaryClient(std::string myname)
   minevents_=0;
   minerrorrate_=0;
   badChannelStatusMask_=0;
+  ProblemCells=0;
+  ProblemCellsByDepth=0;
 }
 
 HcalSummaryClient::HcalSummaryClient(std::string myname, const edm::ParameterSet& ps)
@@ -56,6 +58,8 @@ HcalSummaryClient::HcalSummaryClient(std::string myname, const edm::ParameterSet
   minevents_    = ps.getUntrackedParameter<int>("Summary_minevents",
 						ps.getUntrackedParameter<int>("minevents",0));
   SummaryMapByDepth=0;
+  ProblemCells=0;
+  ProblemCellsByDepth=0;
 }
 
 void HcalSummaryClient::analyze(int LS)
