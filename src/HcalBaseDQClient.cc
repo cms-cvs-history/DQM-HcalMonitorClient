@@ -103,6 +103,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
   gStyle->SetNumberContours(105);
   gROOT->ForceStyle();
 
+  if (debug_>0) std::cout <<"<HcalBaseDQClient::htmlOutput>  Writing html output for client "<<this->name()<<std::endl;
   if (ProblemCells!=0)
     {
       (ProblemCells->getTH2F())->SetMaximum(1.05);
@@ -118,7 +119,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
     {
       htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
       htmlFile << "cellpadding=\"10\"> " << std::endl;
-      for (int i=0;i<2;++i)
+      for (unsigned int i=0;i<ProblemCellsByDepth->depth.size();++i)
 	{
 	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMaximum(1.05);
 	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMinimum(0.);
