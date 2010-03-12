@@ -11,6 +11,7 @@ hcalClient = cms.EDAnalyzer("HcalMonitorClient",
                             
                             baseHtmlDir = cms.untracked.string(""),
                             htmlUpdateTime = cms.untracked.int32(0),
+                            htmlFirstUpdate = cms.untracked.int32(20),
                             databaseDir = cms.untracked.string(""),
                             databaseUpdateTime = cms.untracked.int32(0),
                             databaseFirstUpdate = cms.untracked.int32(10), # database updates have a 10 minute offset, if updatetime>0
