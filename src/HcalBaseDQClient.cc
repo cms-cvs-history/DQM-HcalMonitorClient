@@ -119,8 +119,10 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
     {
       htmlFile << "<table align=\"center\" border=\"1\" cellspacing=\"0\" " << std::endl;
       htmlFile << "cellpadding=\"10\"> " << std::endl;
-      for (unsigned int i=0;i<ProblemCellsByDepth->depth.size();++i)
+      for (unsigned int i=0;i<ProblemCellsByDepth->depth.size()/2;++i)
 	{
+	  if (ProblemCellsByDepth->depth[2*i]==0) continue;
+	  if (ProblemCellsByDepth->depth[2*i+1]==0) continue;
 	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMaximum(1.05);
 	  (ProblemCellsByDepth->depth[2*i]->getTH2F())->SetMinimum(0.);
 	  (ProblemCellsByDepth->depth[2*i+1]->getTH2F())->SetMaximum(1.05);
