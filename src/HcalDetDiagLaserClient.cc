@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagLaserClient.cc
  * 
- * $Date: 2010/03/10 11:56:58 $
- * $Revision: 1.3.4.1 $
+ * $Date: 2010/03/10 16:28:39 $
+ * $Revision: 1.3.4.2 $
  * \author J. Temple
  * \brief Hcal DetDiagLaser Client class
  */
@@ -131,7 +131,6 @@ void HcalDetDiagLaserClient::calculateProblems()
 	      problemvalue=0;
 	      if (BadTiming[d]!=0) problemvalue += BadTiming[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
 	      else if (BadEnergy[d]!=0) problemvalue += BadEnergy[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
-
 	      if (problemvalue==0) continue;
 	      // problem value is a rate; we can normalize it here
 	      problemvalue = min(1.,problemvalue);
