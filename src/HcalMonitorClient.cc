@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/11 09:34:49 $
- * $Revision: 1.92.2.17 $
+ * $Date: 2010/03/12 10:46:03 $
+ * $Revision: 1.92.2.18 $
  * \author J. Temple
  * 
  */
@@ -179,6 +179,7 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
   run_=r.id().run();
   evt_=0;
   jevt_=0;
+  htmlcounter_=0;
 
   // Store list of bad channels and their values
   std::map <HcalDetId, unsigned int> badchannelmap; 
@@ -278,6 +279,7 @@ void HcalMonitorClient::beginRun()
   begin_run_ = true;
   end_run_   = false;
   jevt_ = 0;
+  htmlcounter_=0;
 
   if (dqmStore_==0 || ChannelStatus!=0) return;
   dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
@@ -427,11 +429,13 @@ void HcalMonitorClient::writeHtml()
   gStyle->SetPalette(1);
 
   char tmp[20];
-  
-  if(run_!=-1) sprintf(tmp, "DQM_%s_R%09d", prefixME_.substr(0,prefixME_.size()-1).c_str(),run_);
-  else sprintf(tmp, "DQM_%s_R%09d", prefixME_.substr(0,prefixME_.size()-1).c_str(),0);
+
+  if(run_!=-1) sprintf(tmp, "DQM_%s_R%09d_%i", prefixME_.substr(0,prefixME_.size()-1).c_str(),run_,htmlcounter_);
+  else sprintf(tmp, "DQM_%s_R%09d_%i", prefixME_.substr(0,prefixME_.size()-1).c_str(),0,htmlcounter_);
   string htmlDir = baseHtmlDir_ + "/" + tmp + "/";
   system(("/bin/mkdir -p " + htmlDir).c_str());
+
+  ++htmlcounter_;
 
   ofstream htmlFile;
   htmlFile.open((htmlDir + "index.html").c_str());
