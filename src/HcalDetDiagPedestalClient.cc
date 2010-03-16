@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagPedestalClient.cc
  * 
- * $Date: 2010/03/10 11:56:58 $
- * $Revision: 1.5.4.1 $
+ * $Date: 2010/03/10 16:28:39 $
+ * $Revision: 1.5.4.2 $
  * \author J. Temple
  * \brief Hcal DetDiagPedestal Client class
  */
@@ -149,9 +149,9 @@ void HcalDetDiagPedestalClient::calculateProblems()
 	    {
 	      problemvalue=0;
 	      if (PedestalsMissing[d]!=0) problemvalue += PedestalsMissing[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
-	      else if (PedestalsUnstable[d]!=0) problemvalue += PedestalsUnstable[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
-	      else if (PedestalsBadMean[d]!=0) problemvalue += PedestalsBadMean[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
-	      else if (PedestalsBadRMS[d]!=0) problemvalue += PedestalsBadRMS[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
+	      if (PedestalsUnstable[d]!=0) problemvalue += PedestalsUnstable[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
+	      if (PedestalsBadMean[d]!=0) problemvalue += PedestalsBadMean[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
+	      if (PedestalsBadRMS[d]!=0) problemvalue += PedestalsBadRMS[d]->GetBinContent(eta+1,phi+1)*1./totalevents;
 
 	      if (problemvalue==0) continue;
 	      // problem value is a rate; we can normalize it here

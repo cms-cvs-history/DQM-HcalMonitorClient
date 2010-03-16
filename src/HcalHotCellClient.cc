@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.69.4.6 $
+ * $Date: 2010/03/05 18:39:09 $
+ * $Revision: 1.69.4.7 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -48,6 +48,7 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
   minevents_    = ps.getUntrackedParameter<int>("HotCell_minevents",
 						ps.getUntrackedParameter<int>("minevents",100));
   ProblemCellsByDepth=0;
+  ProblemCells=0;
 }
 
 void HcalHotCellClient::analyze()
@@ -93,20 +94,25 @@ void HcalHotCellClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
+      // Assume histograms aren't found by default
+      HotAboveThresholdByDepth[i]=0;
+      HotAlwaysAboveThresholdByDepth[i]=0;
+      HotNeighborsByDepth[i]=0;
+
       string s=subdir_+"hot_rechit_above_threshold/"+name[i]+"Hot Cells Above Energy Threshold";
       me=dqmStore_->get(s.c_str());
-      HotAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAboveThresholdByDepth[i], debug_);
+      if (me!=0)HotAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAboveThresholdByDepth[i], debug_);
 
       s=subdir_+"hot_rechit_always_above_threshold/"+name[i]+"Hot Cells Persistently Above Energy Threshold";
       me=dqmStore_->get(s.c_str());
-      HotAlwaysAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAlwaysAboveThresholdByDepth[i], debug_);
+      if (me!=0)HotAlwaysAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAlwaysAboveThresholdByDepth[i], debug_);
 
       s=subdir_+"hot_neighbortest/"+name[i]+"Hot Cells Failing Neighbor Test";
       me=dqmStore_->get(s.c_str());
-      HotNeighborsByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotNeighborsByDepth[i], debug_);
+      if (me!=0)HotNeighborsByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotNeighborsByDepth[i], debug_);
       s=subdir_+"hot_neighbortest/NeighborTestEnabled";
       me=dqmStore_->get(s.c_str());
-      if (me->getIntValue()==1)
+      if (me!=0 && me->getIntValue()==1)
 	neighbortest=true;
     }
 

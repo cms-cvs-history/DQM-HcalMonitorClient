@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagLaserClient.cc
  * 
- * $Date: 2010/03/10 16:28:39 $
- * $Revision: 1.3.4.2 $
+ * $Date: 2010/03/12 17:34:44 $
+ * $Revision: 1.3.4.3 $
  * \author J. Temple
  * \brief Hcal DetDiagLaser Client class
  */
@@ -114,8 +114,8 @@ void HcalDetDiagLaserClient::calculateProblems()
       //totalevents=DigiPresentByDepth[d]->GetBinContent(0);
       totalevents=0;
       // Check underflow bins for events processed
-      if (BadTiming[d]!=0) totalevents = BadTiming[d]->GetBinContent(0);
-      else if (BadEnergy[d]!=0) totalevents = BadEnergy[d]->GetBinContent(0);
+      if (BadTiming[d]!=0) totalevents += BadTiming[d]->GetBinContent(0);
+      if (BadEnergy[d]!=0) totalevents += BadEnergy[d]->GetBinContent(0);
       //if (totalevents==0 || totalevents<minevents_) continue;
       
       totalevents=1; // temporary value pending removal of histogram normalization from tasks

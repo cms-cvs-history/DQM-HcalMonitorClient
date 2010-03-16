@@ -11,8 +11,8 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.64.2.6 $
+ * $Date: 2010/03/05 18:39:09 $
+ * $Revision: 1.64.2.7 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -48,6 +48,8 @@ HcalDeadCellClient::HcalDeadCellClient(std::string myname, const edm::ParameterS
   minevents_    = ps.getUntrackedParameter<int>("DeadCell_minevents",
 						ps.getUntrackedParameter<int>("minevents",1000));
   ProblemCellsByDepth=0;
+  ProblemCells=0;
+
 }
 
 void HcalDeadCellClient::analyze()
@@ -92,21 +94,27 @@ void HcalDeadCellClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
+      // Assume that histograms can't be found
+      DigiPresentByDepth[i]=0;
+      RecentMissingDigisByDepth[i]=0;
+      RecHitsPresentByDepth[i]=0;
+      RecentMissingRecHitsByDepth[i]=0;
+      
       string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
       me=dqmStore_->get(s.c_str());
-      DigiPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DigiPresentByDepth[i], debug_);
+      if (me!=0) DigiPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DigiPresentByDepth[i], debug_);
       
       s=subdir_+"dead_digi_often_missing/"+name[i]+"Dead Cells with No Digis";
       me=dqmStore_->get(s.c_str());
-      RecentMissingDigisByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecentMissingDigisByDepth[i], debug_);
+      if (me!=0) RecentMissingDigisByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecentMissingDigisByDepth[i], debug_);
      
       s=subdir_+"dead_rechit_never_present/"+name[i]+"RecHit Above Threshold At Least Once";
       me=dqmStore_->get(s.c_str());
-      RecHitsPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecHitsPresentByDepth[i], debug_);
+      if (me!=0) RecHitsPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecHitsPresentByDepth[i], debug_);
 
        s=subdir_+"dead_rechit_often_missing/"+name[i]+"RecHits Failing Energy Threshold Test";
       me=dqmStore_->get(s.c_str());
-      RecentMissingRecHitsByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecentMissingRecHitsByDepth[i], debug_);
+      if (me!=0)RecentMissingRecHitsByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, RecentMissingRecHitsByDepth[i], debug_);
     }
 
 
