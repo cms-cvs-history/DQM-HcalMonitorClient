@@ -527,7 +527,7 @@ void htmlAnyHisto(int runNo, myHist *hist,
 
       // Form full-sized and thumbnail .gifs from histogram
       //std::string imgNameTMB = "";   
-      std::string imgNameTMB = getAnyIMG(runNo,hist,1,htmlDir,xlab,ylab,debug);
+      //std::string imgNameTMB = getAnyIMG(runNo,hist,1,htmlDir,xlab,ylab,debug);
       //std::string imgName = "";   
       std::string imgName = getAnyIMG(runNo,hist,2,htmlDir,xlab,ylab,debug);
       
@@ -535,8 +535,9 @@ void htmlAnyHisto(int runNo, myHist *hist,
       if (imgName.size() != 0 )
 	{
 	  // Always make width = 100% ?
-	  htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgNameTMB << "\" width = \"100%\"></a><br>"<<hist->GetName()<<"</td>" << endl;
-	}
+	  //htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgName << "\" width = \"100%\"></a><br>"<<hist->GetName()<<"</td>" << endl;
+	  htmlFile <<"<td align=\"center\"><a href=\"" <<imgName<<"\"><img src=\""<<imgName<<"\" width=600 height=360\"></a><br>"<<hist->GetName()<<"</td>"<<std::endl;
+}
       else
 	{
 	  htmlFile << "<td align=\"center\"><img src=\"" << " " << "\"></td>" << endl;
