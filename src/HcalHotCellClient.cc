@@ -11,8 +11,8 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/05 18:39:09 $
- * $Revision: 1.69.4.7 $
+ * $Date: 2010/03/16 17:04:37 $
+ * $Revision: 1.69.4.8 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
@@ -38,6 +38,7 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("HotCell_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("HotCell_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",

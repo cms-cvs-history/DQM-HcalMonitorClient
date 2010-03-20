@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagLEDClient.cc
  * 
- * $Date: 2010/03/10 11:56:58 $
- * $Revision: 1.3.4.1 $
+ * $Date: 2010/03/10 14:21:17 $
+ * $Revision: 1.4.4.1 $
  * \author J. Temple
  * \brief Hcal DetDiagLED Client class
  */
@@ -38,6 +38,7 @@ HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname, const edm::Parame
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("DetDiagLED_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DetDiagLED_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

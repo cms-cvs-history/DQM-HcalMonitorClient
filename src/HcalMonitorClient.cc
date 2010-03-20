@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/12 10:46:03 $
- * $Revision: 1.92.2.18 $
+ * $Date: 2010/03/16 17:23:46 $
+ * $Revision: 1.92.2.19 $
  * \author J. Temple
  * 
  */
@@ -460,7 +460,9 @@ void HcalMonitorClient::writeHtml()
 
   for (unsigned int i=0;i<clients_.size();++i)
     {
-      clients_[i]->htmlOutput(htmlDir);
+      if (clients_[i]->validHtmlOutput()==true)
+	clients_[i]->htmlOutput(htmlDir);
+      // Always print thes out?  Or only when validHtmlOutput is true? 
       htmlFile << "<table border=0 WIDTH=\"50%\"><tr>" << std::endl;
       htmlFile << "<td WIDTH=\"35%\"><a href=\"" << clients_[i]->name_ << ".html"<<"\">"<<clients_[i]->name_<<"</a></td>" << std::endl;
       if(clients_[i]->hasErrors_Temp()) htmlFile << "<td bgcolor=red align=center>This monitor task has errors.</td>" << std::endl;

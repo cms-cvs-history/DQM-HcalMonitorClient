@@ -11,8 +11,8 @@
 /*
  * \file HcalDigiClient.cc
  * 
- * $Date: 2010/03/05 14:53:28 $
- * $Revision: 1.61.4.3 $
+ * $Date: 2010/03/11 11:20:14 $
+ * $Revision: 1.61.4.4 $
  * \author J. Temple
  * \brief DigiClient class
  */
@@ -38,6 +38,7 @@ HcalDigiClient::HcalDigiClient(std::string myname, const edm::ParameterSet& ps)
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("Digi_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("Digi_BadChannelStatusMask",
                                                           ps.getUntrackedParameter<int>("BadChannelStatusMask",
@@ -54,6 +55,32 @@ void HcalDigiClient::analyze()
 {
   if (debug_>2) std::cout <<"\tHcalDigiClient::analyze()"<<std::endl;
   calculateProblems();
+
+  // Get Pawel's timing plots to form averages
+  TH2F* TimingStudyTime=0;
+  TH2F* TimingStudyOcc=0;
+  string s=subdir_+"HFTimingStudy/sumplots/HFTiming_Total_Time";
+  
+  MonitorElement* me=dqmStore_->get(s.c_str());
+  if (me!=0)
+    TimingStudyTime=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_,TimingStudyTime, debug_);
+
+  s=subdir_+"HFTimingStudy/sumplots/HFTiming_Occupancy";
+  me=dqmStore_->get(s.c_str());
+  if (me!=0)
+    TimingStudyOcc=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_,TimingStudyOcc, debug_);
+
+  HFTiming_averageTime->Reset();
+  if (TimingStudyTime!=0 && TimingStudyOcc!=0)
+    {
+      int etabins=(HFTiming_averageTime->getTH2F())->GetNbinsX();
+      int phibins=(HFTiming_averageTime->getTH2F())->GetNbinsY();
+      for (int x=1;x<=etabins;++x)
+	for (int y=1;y<=phibins;++y)
+	  if (TimingStudyOcc->GetBinContent(x,y)!=0)
+	    HFTiming_averageTime->setBinContent(x,y,TimingStudyTime->GetBinContent(x,y)*1./TimingStudyOcc->GetBinContent(x,y));
+    }
+  HFTiming_averageTime->getTH2F()->SetMinimum(0);
 }
 
 void HcalDigiClient::calculateProblems()
@@ -217,6 +244,9 @@ void HcalDigiClient::beginRun(void)
   for (unsigned int i=0; i<ProblemCellsByDepth->depth.size();++i)
     problemnames_.push_back(ProblemCellsByDepth->depth[i]->getName());
   nevts_=0;
+
+  dqmStore_->setCurrentFolder(subdir_+"HFTimingStudy");
+  HFTiming_averageTime=dqmStore_->book2D("HFTimingStudy_Average_Time","HFTimingStudy Average Time (time sample)",83,-41.5,41.5,72,0.5,72.5);
 }
 
 void HcalDigiClient::endRun(void){analyze();}

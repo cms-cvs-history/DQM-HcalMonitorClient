@@ -11,8 +11,8 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/09 22:26:17 $
- * $Revision: 1.47.4.9 $
+ * $Date: 2010/03/11 11:20:14 $
+ * $Revision: 1.47.4.10 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
@@ -38,6 +38,7 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("RecHit_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("RecHit_BadChannelStatusMask",
                                                           ps.getUntrackedParameter<int>("BadChannelStatusMask",
@@ -90,19 +91,19 @@ void HcalRecHitClient::analyze()
       SqrtSumEnergy2ByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, SqrtSumEnergy2ByDepth[i], debug_);
 
       // Threshold histograms
-      s=subdir_+"Distributions_PassedBPTX/"+name[i]+"Above Threshold RecHit Occupancy";
+      s=subdir_+"Distributions_PassedMinBias/"+name[i]+"Above Threshold RecHit Occupancy";
       me=dqmStore_->get(s.c_str());
       if (me==0) {if (debug_>0) std::cout <<"Could not get histogram "<<s<<endl; gotHistos=false; break;}
       OccupancyThreshByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, OccupancyThreshByDepth[i], debug_);
-      s=subdir_+"Distributions_PassedBPTX/sumplots/"+name[i]+"Above Threshold RecHit Summed Energy GeV";
+      s=subdir_+"Distributions_PassedMinBias/sumplots/"+name[i]+"Above Threshold RecHit Summed Energy GeV";
       me=dqmStore_->get(s.c_str());
       if (me==0) {if (debug_>0) std::cout <<"Could not get histogram "<<s<<endl; gotHistos=false; break;}
       SumEnergyThreshByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, SumEnergyThreshByDepth[i], debug_);
-      s=subdir_+"Distributions_PassedBPTX/sumplots/"+name[i]+"Above Threshold RecHit Summed Time nS";
+      s=subdir_+"Distributions_PassedMinBias/sumplots/"+name[i]+"Above Threshold RecHit Summed Time nS";
       me=dqmStore_->get(s.c_str());
       if (me==0) {if (debug_>0) std::cout <<"Could not get histogram "<<s<<endl; gotHistos=false; break;}
       SumTimeThreshByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, SumTimeThreshByDepth[i], debug_);
-      s=subdir_+"Distributions_PassedBPTX/sumplots/"+name[i]+"Above Threshold RecHit Sqrt Summed Energy2 GeV";
+      s=subdir_+"Distributions_PassedMinBias/sumplots/"+name[i]+"Above Threshold RecHit Sqrt Summed Energy2 GeV";
       me=dqmStore_->get(s.c_str());
       if (me==0) {if (debug_>0) std::cout <<"Could not get histogram "<<s<<endl; gotHistos=false; break;}
       SqrtSumEnergy2ThreshByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, SqrtSumEnergy2ThreshByDepth[i], debug_);
@@ -135,6 +136,9 @@ void HcalRecHitClient::analyze()
     {
       for (int eta=0;eta<OccupancyByDepth[mydepth]->GetNbinsX();++eta)
 	{
+	  // eta+1=1:  ieta = -42
+	  // eta+1=13: ieta = -29
+
 	  for (int phi=0;phi<72;++phi)
 	    {
 	      if (OccupancyByDepth[mydepth]->GetBinContent(eta+1, phi+1)>0)
@@ -401,7 +405,7 @@ void HcalRecHitClient::beginRun(void)
 	  meTimeByDepth->depth[i]->setBinContent(x,y,-1000);
     }
 
-  dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX");
+  dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedMinBias");
   meEnergyThreshByDepth = new EtaPhiHists();
   meEnergyThreshByDepth->setup(dqmStore_,"Above Threshold RecHit Average Energy","GeV");
   meTimeThreshByDepth = new EtaPhiHists();
@@ -429,7 +433,7 @@ void HcalRecHitClient::beginRun(void)
   meHOEnergyRMS_1D=dqmStore_->book1D("HO_energy_RMS_1D","HO Energy RMS Per RecHit;Energy (GeV)",500,0,5);
   meHFEnergyRMS_1D=dqmStore_->book1D("HF_energy_RMS_1D","HF Energy RMS Per RecHit;Energy (GeV)",500,0,5);
 
-  dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedBPTX/rechit_1D_plots/");
+  dqmStore_->setCurrentFolder(subdir_+"Distributions_PassedMinBias/rechit_1D_plots/");
   meHBEnergyThresh_1D=dqmStore_->book1D("HB_energyThresh_1D","HB Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,35);
   meHEEnergyThresh_1D=dqmStore_->book1D("HE_energyThresh_1D","HE Average Energy Per RecHit Above Threshold;Energy (GeV)",400,-5,35);
   meHOEnergyThresh_1D=dqmStore_->book1D("HO_energyThresh_1D","HO Average Energy Per RecHit Above Threshold;Energy (GeV)",600,-10,50);

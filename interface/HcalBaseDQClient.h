@@ -12,8 +12,8 @@
 /*
  * \file HcalBaseDQClient.h
  * 
- * $Date: 2010/03/05 18:39:08 $
- * $Revision: 1.1.2.4 $
+ * $Date: 2010/03/09 21:23:08 $
+ * $Revision: 1.1.2.5 $
  * \author J. Temple
  * \brief Hcal Monitor Client base class
  * based on code in EcalBarrelMonitorClient/interface/EBClient.h
@@ -47,7 +47,9 @@ class HcalBaseDQClient
   virtual void htmlOutput(std::string htmlDir);
   virtual void setStatusMap(std::map<HcalDetId, unsigned int>& map);
   virtual void updateChannelStatus(std::map<HcalDetId, unsigned int>& myqual){};     
- 
+  
+  virtual bool validHtmlOutput();
+
   inline void setEventSetup(const edm::EventSetup& es) 
     { c = &(es);  }
   const edm::EventSetup *c;
@@ -60,6 +62,7 @@ class HcalBaseDQClient
   bool enableCleanup_;
   int debug_;
   int badChannelStatusMask_; 
+  bool validHtmlOutput_;
 
   bool testenabled_;
   int minevents_; // minimum number of events for test to pass

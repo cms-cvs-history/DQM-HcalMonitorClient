@@ -11,8 +11,8 @@
 /*
  * \file HcalBeamClient.cc
  * 
- * $Date: 2010/03/05 14:53:27 $
- * $Revision: 1.14.2.1 $
+ * $Date: 2010/03/05 16:28:20 $
+ * $Revision: 1.14.2.2 $
  * \author J. Temple
  * \brief Hcal Beam Monitor Client class
  */
@@ -38,6 +38,7 @@ HcalBeamClient::HcalBeamClient(std::string myname, const edm::ParameterSet& ps)
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("Beam_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   // known hot/dead channels blacked out on plot
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("Beam_BadChannelStatusMask",

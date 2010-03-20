@@ -11,8 +11,8 @@
 /*
  * \file HcalTrigPrimClient.cc
  * 
- * $Date: 2010/03/08 10:34:48 $
- * $Revision: 1.16.4.6 $
+ * $Date: 2010/03/08 19:57:24 $
+ * $Revision: 1.16.4.7 $
  * \author J. Temple
  * \brief Hcal Trigger Primitive Client class
  */
@@ -38,6 +38,7 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("TrigPrim_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("TrigPrim_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

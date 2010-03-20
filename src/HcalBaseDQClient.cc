@@ -16,6 +16,7 @@ HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("validHtmlOutput",true);
   subdir_="HcalInfo/";
   subdir_=prefixME_+subdir_;
 
@@ -57,6 +58,11 @@ void HcalBaseDQClient::setStatusMap(std::map<HcalDetId, unsigned int>& map)
     if (debug_>1) std::cout <<"<HcalBaseDQClient::setStatusMap>  "<<name_<<" Output map size = "<<badstatusmap.size()<<endl;
   } // void HcalBaseDQClient::getStatusMap
 
+
+bool HcalBaseDQClient::validHtmlOutput()
+{
+  return validHtmlOutput_;
+}
 
 void HcalBaseDQClient::htmlOutput(string htmlDir)
 {

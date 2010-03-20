@@ -16,8 +16,8 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/11 20:11:40 $
- * $Revision: 1.1.2.11 $
+ * $Date: 2010/03/11 20:33:47 $
+ * $Revision: 1.1.2.12 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
@@ -43,6 +43,7 @@ HcalRawDataClient::HcalRawDataClient(std::string myname, const edm::ParameterSet
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("RawData_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("RawData_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

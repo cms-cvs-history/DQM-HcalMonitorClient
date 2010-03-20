@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagNoiseMonitorClient.cc
  * 
- * $Date: 2010/03/10 14:21:17 $
- * $Revision: 1.1.4.1 $
+ * $Date: 2010/03/11 09:34:49 $
+ * $Revision: 1.1.4.2 $
  * \author J. Temple
  * \brief Hcal DetDiagNoiseMonitor Client class
  */
@@ -38,6 +38,7 @@ HcalDetDiagNoiseMonitorClient::HcalDetDiagNoiseMonitorClient(std::string myname,
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("DetDiagNoiseMonitor_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DetDiagNoiseMonitor_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

@@ -23,17 +23,19 @@ class HcalDetDiagLaserClient : public HcalBaseDQClient {
   void endRun(void); 
   void setup(void);  
   void cleanup(void);
-
   bool hasErrors_Temp(void);  
   bool hasWarnings_Temp(void);
   bool hasOther_Temp(void);
   bool test_enabled(void);
   
+  void htmlOutput(std::string);
+  bool validHtmlOutput();
   /// Destructor
   ~HcalDetDiagLaserClient();
 
  private:
   int nevts_;
+  int status;
 };
 
 #endif

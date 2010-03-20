@@ -11,8 +11,8 @@
 /*
  * \file HcalNZSClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.1.2.2 $
+ * $Date: 2010/03/11 11:20:15 $
+ * $Revision: 1.1.2.3 $
  * \author J. Temple
  * \brief Hcal NZS Client class
  */
@@ -38,6 +38,7 @@ HcalNZSClient::HcalNZSClient(std::string myname, const edm::ParameterSet& ps)
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("NZS_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("NZS_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

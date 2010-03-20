@@ -11,8 +11,8 @@
 /*
  * \file HcalDetDiagTimingClient.cc
  * 
- * $Date: 2010/03/10 14:21:17 $
- * $Revision: 1.1.4.1 $
+ * $Date: 2010/03/12 11:08:28 $
+ * $Revision: 1.1.2.1 $
  * \author J. Temple
  * \brief Hcal DetDiagTiming Client class
  */
@@ -38,6 +38,7 @@ HcalDetDiagTimingClient::HcalDetDiagTimingClient(std::string myname, const edm::
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
 
+  validHtmlOutput_       = ps.getUntrackedParameter<bool>("DetDiagTiming_validHtmlOutput",true);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   badChannelStatusMask_   = ps.getUntrackedParameter<int>("DetDiagTiming_BadChannelStatusMask",
 							  ps.getUntrackedParameter<int>("BadChannelStatusMask",0));

@@ -34,6 +34,7 @@ class HcalDigiClient : public HcalBaseDQClient {
 
  private:
   int nevts_;
+  MonitorElement* HFTiming_averageTime;
 };
 
 #endif
