@@ -3,6 +3,8 @@
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include <cstdlib>
 
+using namespace std;
+
 void resetME(const char* name, DQMStore* dbe){
   if(dbe==NULL) return;
   MonitorElement* me= dbe->get(name);
