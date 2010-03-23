@@ -81,7 +81,7 @@ std::string getIMG2(int runNo,TH2F* hist, int size, std::string htmlDir, const c
 void histoHTML(int runNo,TH1F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, std::string htmlDir);
 void histoHTML2(int runNo,TH2F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, std::string htmlDir, bool color=false);
 
-void htmlErrors(int runNo,std::string htmlDir, std::string client, std::string process, DQMStore* dbe, map<std::string, std::vector<QReport*> > mapE, map<std::string, std::vector<QReport*> > mapW, map<std::string, std::vector<QReport*> > mapO);
+void htmlErrors(int runNo,std::string htmlDir, std::string client, std::string process, DQMStore* dbe, std::map<std::string, std::vector<QReport*> > mapE, std::map<std::string, std::vector<QReport*> > mapW, std::map<std::string, std::vector<QReport*> > mapO);
 
 void createXRangeTest(DQMStore* dbe, std::vector<std::string>& params);
 void createYRangeTest(DQMStore* dbe, std::vector<std::string>& params);
