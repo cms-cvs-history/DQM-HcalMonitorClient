@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/16 17:23:46 $
- * $Revision: 1.92.2.19 $
+ * $Date: 2010/03/20 20:55:44 $
+ * $Revision: 1.92.2.20 $
  * \author J. Temple
  * 
  */
@@ -541,8 +541,10 @@ void HcalMonitorClient::writeChannelStatus()
   //Now dump out to text file
   std::ostringstream file;
   databasedir_=databasedir_+"/"; // add extra slash, just in case
-  file <<databasedir_<<"HcalDQMstatus_"<<run_<<".txt";
+  //file <<databasedir_<<"HcalDQMstatus_"<<run_<<".txt";
+  file <<databasedir_<<"HcalDQMstatus.txt";
   std::ofstream outStream(file.str().c_str());
+  outStream<<"###  Run # "<<run_<<endl;
   HcalDbASCIIIO::dumpObject (outStream, (*newChanQual));
   return;
 } // void HcalMonitorClient::writeChannelStatus()
