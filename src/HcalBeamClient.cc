@@ -11,14 +11,11 @@
 /*
  * \file HcalBeamClient.cc
  * 
- * $Date: 2010/03/05 16:28:20 $
- * $Revision: 1.14.2.2 $
+ * $Date: 2010/03/20 20:55:43 $
+ * $Revision: 1.14.2.3 $
  * \author J. Temple
  * \brief Hcal Beam Monitor Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalBeamClient::HcalBeamClient(std::string myname)
 {
@@ -183,7 +180,7 @@ void HcalBeamClient::calculateProblems()
 
 void HcalBeamClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalBeamClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

@@ -11,14 +11,11 @@
 /*
  * \file HcalDeadCellClient.cc
  * 
- * $Date: 2010/03/16 17:04:37 $
- * $Revision: 1.64.2.8 $
+ * $Date: 2010/03/20 20:55:43 $
+ * $Revision: 1.64.2.9 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalDeadCellClient::HcalDeadCellClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalDeadCellClient::HcalDeadCellClient(std::string myname, const edm::ParameterS
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DeadCellFolder","DeadCellMonitor_Hcal/"); // DeadCellMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<std::string>("DeadCellFolder","DeadCellMonitor_Hcal/"); // DeadCellMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -101,7 +98,7 @@ void HcalDeadCellClient::calculateProblems()
       RecHitsPresentByDepth[i]=0;
       RecentMissingRecHitsByDepth[i]=0;
       
-      string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
+      std::string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
       me=dqmStore_->get(s.c_str());
       if (me!=0) DigiPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DigiPresentByDepth[i], debug_);
       
@@ -218,7 +215,7 @@ void HcalDeadCellClient::calculateProblems()
 
 void HcalDeadCellClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalDeadCellClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

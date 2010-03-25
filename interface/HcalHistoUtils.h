@@ -56,8 +56,6 @@
 
 inline TH1F* getTH1F(std::string name, std::string process, std::string rootfolder, DQMStore* dbe_, bool verb, bool clone)
 {
-  using std::cout;
-  using std::endl;
   
   if (!dbe_) return NULL;
   std::stringstream title;
@@ -67,12 +65,12 @@ inline TH1F* getTH1F(std::string name, std::string process, std::string rootfold
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   std::stringstream clonehisto;
   if (clone)
@@ -86,9 +84,6 @@ inline TH1F* getTH1F(std::string name, std::string process, std::string rootfold
 
 inline TH2F* getTH2F(std::string name, std::string process, std::string rootfolder, DQMStore* dbe_, bool verb, bool clone)
 {
-  using std::cout;
-  using std::endl;
-  
   if (!dbe_) return NULL;
   std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
@@ -97,12 +92,12 @@ inline TH2F* getTH2F(std::string name, std::string process, std::string rootfold
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   std::stringstream clonehisto;
   if (clone)
@@ -117,9 +112,6 @@ inline TH2F* getTH2F(std::string name, std::string process, std::string rootfold
 
 inline TH3F* getTH3F(std::string name, std::string process, std::string rootfolder, DQMStore* dbe_, bool verb, bool clone)
 {
-  using std::cout;
-  using std::endl;
-  
   if (!dbe_) return NULL;
   std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
@@ -128,12 +120,12 @@ inline TH3F* getTH3F(std::string name, std::string process, std::string rootfold
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   std::stringstream clonehisto;
   if (clone)
@@ -147,9 +139,6 @@ inline TH3F* getTH3F(std::string name, std::string process, std::string rootfold
 
 inline TProfile* getTProfile(std::string name, std::string process, std::string rootfolder, DQMStore* dbe_, bool verb, bool clone)
 {
-  using std::cout;
-  using std::endl;
-  
   if (!dbe_) return NULL;
   std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
@@ -158,12 +147,12 @@ inline TProfile* getTProfile(std::string name, std::string process, std::string 
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   std::stringstream clonehisto;
   if (clone)
@@ -177,9 +166,6 @@ inline TProfile* getTProfile(std::string name, std::string process, std::string 
 
 inline TProfile2D* getTProfile2D(std::string name, std::string process, std::string rootfolder, DQMStore* dbe_, bool verb, bool clone)
 {
-  using std::cout;
-  using std::endl;
-  
   if (!dbe_) return NULL;
   std::stringstream title;
   title <<process.c_str()<<rootfolder.c_str()<<"/"<<name.c_str();
@@ -188,12 +174,12 @@ inline TProfile2D* getTProfile2D(std::string name, std::string process, std::str
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   std::stringstream clonehisto;
   if (clone)
@@ -232,11 +218,7 @@ myHist* getAnyHisto(myHist* hist,
      We might implement a scale functionality at some later point?
   */
 
-  using std::cout;
-  using std::endl;
-
   if (!dbe_) return NULL;
-
 
   std::stringstream clonehisto;
   std::stringstream title;
@@ -247,12 +229,12 @@ myHist* getAnyHisto(myHist* hist,
   
   if (!me) 
     {
-      if (verb) cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<endl;
+      if (verb) std::cout <<"SORRY, COULD NOT FIND HISTOGRAM NAMED ["<< title.str().c_str()<<"]"<<std::endl;
       return NULL; // ME not found
     } // if (!me)
 
   if (verb) 
-    cout << "Found '" << title.str().c_str() << "'" << endl;
+    std::cout << "Found '" << title.str().c_str() << "'" << std::endl;
 
   if (clone)
     clonehisto<<"ME "<<name.c_str(); // set clone histogram name
@@ -316,15 +298,15 @@ myHist* getAnyHisto(myHist* hist,
     {
       if (verb) 
 	{
-	  cout <<"Don't know how to access histogram '"<<title;
-	  cout<<"' of type '"<<histtype<<"'"<<endl;
+	  std::cout <<"Don't know how to access histogram '"<<title;
+	  std::cout<<"' of type '"<<histtype<<"'"<<std::endl;
 	}
       return NULL;
     }
 
   // Should never reach this point
   if (verb)
-    cout <<"<HcalHistUtils::getAnyHisto>  YOU SHOULD NEVER SEE THIS MESSAGE!"<<endl;
+    std::cout <<"<HcalHistUtils::getAnyHisto>  YOU SHOULD NEVER SEE THIS MESSAGE!"<<std::endl;
   return NULL;
 
 } // myHist* getAnyHisto(...)
@@ -378,7 +360,7 @@ std::string getAnyIMG(int runNo,myHist* hist, int size, std::string htmlDir,
     else if (name.substr(i,1)=="/")
       name.replace(i,1,"_div_");
   } // for (unsigned int i=0; i< name.size();
-  //cout <<"NEWNAME = ["<<name<<"]"<<endl;
+  //std::cout <<"NEWNAME = ["<<name<<"]"<<std::endl;
 
   char dest[512]; // stores name of destination .gif file
   if(runNo>-1) sprintf(dest,"%s - Run %d",name.c_str(),runNo);
@@ -512,9 +494,6 @@ void htmlAnyHisto(int runNo, myHist *hist,
     Generates html output from any kind of input histogram
   */
 
-  using std::cout;
-  using std::endl;
-
   if(hist!=NULL)
     {    
       std::string histtype=hist->ClassName();
@@ -535,19 +514,19 @@ void htmlAnyHisto(int runNo, myHist *hist,
       if (imgName.size() != 0 )
 	{
 	  // Always make width = 100% ?
-	  //htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgName << "\" width = \"100%\"></a><br>"<<hist->GetName()<<"</td>" << endl;
+	  //htmlFile << "<td align=\"center\"><a href=\"" <<  imgName << "\"><img src=\"" <<  imgName << "\" width = \"100%\"></a><br>"<<hist->GetName()<<"</td>" << std::endl;
 	  htmlFile <<"<td align=\"center\"><a href=\"" <<imgName<<"\"><img src=\""<<imgName<<"\" width=600 height=360\"></a><br>"<<hist->GetName()<<"</td>"<<std::endl;
 }
       else
 	{
-	  htmlFile << "<td align=\"center\"><img src=\"" << " " << "\"></td>" << endl;
+	  htmlFile << "<td align=\"center\"><img src=\"" << " " << "\"></td>" << std::endl;
 	}
     } // (hist != NULL)
 
   else  // if no image found, make a blank table entry (maybe improve on this later? -- write an error message?)
     {
-       htmlFile<<"<td align=\"center\"><br><br> Histogram does not exist in ROOT file!<br>Diagnostic flag may be off.<br>(This may be normal in online running.)</td>"<<endl;
-       //htmlFile << "<td><img src=\"" << " " << "\"></td>" << endl;
+       htmlFile<<"<td align=\"center\"><br><br> Histogram does not exist in ROOT file!<br>Diagnostic flag may be off.<br>(This may be normal in online running.)</td>"<<std::endl;
+       //htmlFile << "<td><img src=\"" << " " << "\"></td>" << std::endl;
     }
   return;
 } //void htmlAnyHisto(...)

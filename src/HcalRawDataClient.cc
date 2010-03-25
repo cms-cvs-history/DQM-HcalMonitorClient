@@ -16,14 +16,11 @@
 /*
  * \file HcalRawDataClient.cc
  * 
- * $Date: 2010/03/11 20:33:47 $
- * $Revision: 1.1.2.12 $
+ * $Date: 2010/03/20 20:55:45 $
+ * $Revision: 1.1.2.13 $
  * \author J. St. John
  * \brief Hcal Raw Data Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalRawDataClient::HcalRawDataClient(std::string myname)
 {
@@ -35,10 +32,10 @@ HcalRawDataClient::HcalRawDataClient(std::string myname, const edm::ParameterSet
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("RawDataFolder","RawDataMonitor_Hcal/"); // RawDataMonitor
+  subdir_                = ps.getUntrackedParameter<std::string>("RawDataFolder","RawDataMonitor_Hcal/"); // RawDataMonitor
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -188,7 +185,7 @@ void HcalRawDataClient::calculateProblems()
 
 void HcalRawDataClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalRawDataClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
@@ -331,7 +328,7 @@ void HcalRawDataClient::updateChannelStatus(std::map<HcalDetId, unsigned int>& m
 
 void HcalRawDataClient::getHardwareSpaceHistos(void){
   MonitorElement* me;
-  string s;
+  std::string s;
   if (debug_>1) cout<<"\t<HcalRawDataClient>: getHardwareSpaceHistos()"<<endl;
   s=subdir_+"Corruption/01 Common Data Format violations";
   me=dqmStore_->get(s.c_str());  
@@ -378,7 +375,7 @@ void HcalRawDataClient::getHardwareSpaceHistos(void){
   char chararray[150];
   for (int i=0; i<NUMDCCS; i++) {
     sprintf(chararray,"Corruption/Channel Data Integrity/FED %03d Channel Integrity", i+700);
-    s=subdir_+string(chararray);
+    s=subdir_+std::string(chararray);
     me=dqmStore_->get(s.c_str());  
     Chann_DataIntegrityCheck_[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, Chann_DataIntegrityCheck_[i], debug_);
     if (!Chann_DataIntegrityCheck_[i] & (debug_>0)) std::cout <<"<HcalRawDataClient::analyze> "<<s<<" histogram does not exist!"<<endl;

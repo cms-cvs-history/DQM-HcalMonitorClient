@@ -11,15 +11,12 @@
 /*
  * \file HcalHotCellClient.cc
  * 
- * $Date: 2010/03/16 17:04:37 $
- * $Revision: 1.69.4.8 $
+ * $Date: 2010/03/20 20:55:44 $
+ * $Revision: 1.69.4.9 $
  * \author J. Temple
  * \brief Hot Cell Client class
  */
-
-using namespace std;
-using namespace edm;
-
+ 
 HcalHotCellClient::HcalHotCellClient(std::string myname)
 {
   name_=myname;
@@ -30,10 +27,10 @@ HcalHotCellClient::HcalHotCellClient(std::string myname, const edm::ParameterSet
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("HotCellFolder","HotCellMonitor_Hcal/"); // HotCellMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<std::string>("HotCellFolder","HotCellMonitor_Hcal/"); // HotCellMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -100,7 +97,7 @@ void HcalHotCellClient::calculateProblems()
       HotAlwaysAboveThresholdByDepth[i]=0;
       HotNeighborsByDepth[i]=0;
 
-      string s=subdir_+"hot_rechit_above_threshold/"+name[i]+"Hot Cells Above Energy Threshold";
+      std::string s=subdir_+"hot_rechit_above_threshold/"+name[i]+"Hot Cells Above Energy Threshold";
       me=dqmStore_->get(s.c_str());
       if (me!=0)HotAboveThresholdByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, HotAboveThresholdByDepth[i], debug_);
 
@@ -202,7 +199,7 @@ void HcalHotCellClient::calculateProblems()
 
 void HcalHotCellClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalHotCellClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

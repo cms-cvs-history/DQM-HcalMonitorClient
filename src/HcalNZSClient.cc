@@ -11,14 +11,11 @@
 /*
  * \file HcalNZSClient.cc
  * 
- * $Date: 2010/03/11 11:20:15 $
- * $Revision: 1.1.2.3 $
+ * $Date: 2010/03/20 20:55:44 $
+ * $Revision: 1.1.2.4 $
  * \author J. Temple
  * \brief Hcal NZS Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalNZSClient::HcalNZSClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalNZSClient::HcalNZSClient(std::string myname, const edm::ParameterSet& ps)
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("NZSFolder","NZSMonitor_Hcal/"); // NZSMonitor_Hcal/
+  subdir_                = ps.getUntrackedParameter<std::string>("NZSFolder","NZSMonitor_Hcal/"); // NZSMonitor_Hcal/
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -93,7 +90,7 @@ void HcalNZSClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
-      string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
+      std::string s=subdir_+"dead_digi_never_present/"+name[i]+"Digi Present At Least Once";
       me=dqmStore_->get(s.c_str());
       DigiPresentByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, DigiPresentByDepth[i], debug_);
     }      
@@ -174,7 +171,7 @@ void HcalNZSClient::calculateProblems()
 
 void HcalNZSClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalNZSClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

@@ -11,14 +11,11 @@
 /*
  * \file HcalTrigPrimClient.cc
  * 
- * $Date: 2010/03/08 19:57:24 $
- * $Revision: 1.16.4.7 $
+ * $Date: 2010/03/20 20:55:45 $
+ * $Revision: 1.16.4.8 $
  * \author J. Temple
  * \brief Hcal Trigger Primitive Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalTrigPrimClient::HcalTrigPrimClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalTrigPrimClient::HcalTrigPrimClient(std::string myname, const edm::ParameterS
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("TrigPrimFolder","TrigPrimMonitor_Hcal/"); // TrigPrimMonitor
+  subdir_                = ps.getUntrackedParameter<std::string>("TrigPrimFolder","TrigPrimMonitor_Hcal/"); // TrigPrimMonitor
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -296,7 +293,7 @@ void HcalTrigPrimClient::calculateProblems()
 
 void HcalTrigPrimClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalTrigPrimClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

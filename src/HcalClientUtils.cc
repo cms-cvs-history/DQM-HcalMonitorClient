@@ -3,7 +3,6 @@
 #include "DQMServices/Core/interface/MonitorElement.h"
 #include <cstdlib>
 
-using namespace std;
 
 void resetME(const char* name, DQMStore* dbe){
   if(dbe==NULL) return;
@@ -73,22 +72,22 @@ bool isValidGeom(int subdet, int iEta, int iPhi, int depth){
   return true;
 }
 
-void dumpHisto(TH1F* hist, vector<string> &names, 
-	       vector<double> &meanX, vector<double> &meanY, 
-	       vector<double> &rmsX, vector<double> &rmsY){
+void dumpHisto(TH1F* hist, std::vector<std::string> &names, 
+	       std::vector<double> &meanX, std::vector<double> &meanY, 
+	       std::vector<double> &rmsX, std::vector<double> &rmsY){
   
-  names.push_back((string)hist->GetName());
+  names.push_back((std::string)hist->GetName());
   meanX.push_back(hist->GetMean(1));
   meanY.push_back(-123e10);
   rmsX.push_back(hist->GetRMS(1));
   rmsY.push_back(-123e10);  
   return;
 }
-void dumpHisto2(TH2F* hist, vector<string> &names, 
-	       vector<double> &meanX, vector<double> &meanY, 
-	       vector<double> &rmsX, vector<double> &rmsY){
+void dumpHisto2(TH2F* hist, std::vector<std::string> &names, 
+	       std::vector<double> &meanX, std::vector<double> &meanY, 
+	       std::vector<double> &rmsX, std::vector<double> &rmsY){
   
-  names.push_back((string)hist->GetName());
+  names.push_back((std::string)hist->GetName());
   meanX.push_back(hist->GetMean(1));
   meanY.push_back(hist->GetMean(2));
   rmsX.push_back(hist->GetRMS(1));
@@ -96,7 +95,7 @@ void dumpHisto2(TH2F* hist, vector<string> &names,
   return;
 }
 
-void cleanString(string& title){
+void cleanString(std::string& title){
 
   for ( unsigned int i = 0; i < title.size(); i++ ) {
     if ( title.substr(i, 6) == " - Run" ){
@@ -111,7 +110,7 @@ void cleanString(string& title){
   }
 }
 
-void parseString(string& title){
+void parseString(std::string& title){
   
   for ( unsigned int i = 0; i < title.size(); i++ ) {
     if ( title.substr(i, 1) == " " ){
@@ -136,20 +135,20 @@ void parseString(string& title){
   return;
 }
 
-string getIMG2(int runNo,TH2F* hist, int size, string htmlDir, const char* xlab, const char* ylab,bool color){
+std::string getIMG2(int runNo,TH2F* hist, int size, std::string htmlDir, const char* xlab, const char* ylab,bool color){
 
   if(hist==NULL) {
     printf("getIMG2:  This histo is NULL, %s, %s\n",xlab,ylab);
     return "";
   }
 
-  string name = hist->GetTitle();
+  std::string name = hist->GetTitle();
   cleanString(name);
   char dest[512];
   if(runNo>-1) sprintf(dest,"%s - Run %d",name.c_str(),runNo);
   else sprintf(dest,"%s",name.c_str());
   hist->SetTitle(dest);
-  string title = dest;
+  std::string title = dest;
 
   int xwid = 900; int ywid =540;
   if(size==1){
@@ -164,8 +163,8 @@ string getIMG2(int runNo,TH2F* hist, int size, string htmlDir, const char* xlab,
   
 
   parseString(title);
-  string outName = title + ".gif";
-  string saveName = htmlDir + outName;
+  std::string outName = title + ".gif";
+  std::string saveName = htmlDir + outName;
   hist->SetXTitle(xlab);
   hist->SetYTitle(ylab);
   if(color) hist->Draw();
@@ -179,20 +178,20 @@ string getIMG2(int runNo,TH2F* hist, int size, string htmlDir, const char* xlab,
   return outName;
 }
 
-string getIMG(int runNo,TH1F* hist, int size, string htmlDir, const char* xlab, const char* ylab){
+std::string getIMG(int runNo,TH1F* hist, int size, std::string htmlDir, const char* xlab, const char* ylab){
 
   if(hist==NULL) {
     printf("getIMG:  This histo is NULL, %s, %s\n",xlab,ylab);
     return "";
   }
 
-  string name = hist->GetTitle();
+  std::string name = hist->GetTitle();
   cleanString(name);
   char dest[512];
   if(runNo>-1) sprintf(dest,"%s - Run %d",name.c_str(),runNo);
   else sprintf(dest,"%s",name.c_str());
   hist->SetTitle(dest);
-  string title = dest;
+  std::string title = dest;
 
   int xwid = 900; int ywid =540;
   if(size==1){
@@ -202,8 +201,8 @@ string getIMG(int runNo,TH1F* hist, int size, string htmlDir, const char* xlab, 
   TCanvas* can = new TCanvas(dest,dest, xwid, ywid);
 
   parseString(title);
-  string outName = title + ".gif";
-  string saveName = htmlDir + outName;
+  std::string outName = title + ".gif";
+  std::string saveName = htmlDir + outName;
   hist->SetXTitle(xlab);
   hist->SetYTitle(ylab);
   hist->Draw();
@@ -214,7 +213,7 @@ string getIMG(int runNo,TH1F* hist, int size, string htmlDir, const char* xlab, 
   return outName;
 }
 
-TH2F* getHisto2(string name, string process, DQMStore* dbe_, bool verb, bool clone){
+TH2F* getHisto2(std::string name, std::string process, DQMStore* dbe_, bool verb, bool clone){
 
   if(!dbe_) return NULL;
 
@@ -225,7 +224,7 @@ TH2F* getHisto2(string name, string process, DQMStore* dbe_, bool verb, bool clo
   MonitorElement* me = dbe_->get(title);
 
   if ( me ) {      
-    if ( verb) cout << "Found '" << title << "'" << endl;
+    if ( verb) std::cout << "Found '" << title << "'" << endl;
     if ( clone) {
       char histo[150];
       sprintf(histo, "ME %s",name.c_str());
@@ -237,7 +236,7 @@ TH2F* getHisto2(string name, string process, DQMStore* dbe_, bool verb, bool clo
   return out;
 }
 
-TH1F* getHisto(string name, string process, DQMStore* dbe_, bool verb, bool clone){
+TH1F* getHisto(std::string name, std::string process, DQMStore* dbe_, bool verb, bool clone){
   if(!dbe_) return NULL;
   
   char title[150];  
@@ -246,7 +245,7 @@ TH1F* getHisto(string name, string process, DQMStore* dbe_, bool verb, bool clon
 
   const MonitorElement* me = dbe_->get(title);
   if (me){      
-    if ( verb ) cout << "Found '" << title << "'" << endl;
+    if ( verb ) std::cout << "Found '" << title << "'" << endl;
     if ( clone ) {
       char histo[150];
       sprintf(histo, "ME %s",name.c_str());
@@ -265,11 +264,11 @@ TH2F* getHisto2(const MonitorElement* me, bool verb,bool clone){
   TH2F* out = NULL;
 
   if ( me ) {      
-    if ( verb) cout << "Found '" << me->getName() << "'" << endl;
+    if ( verb) std::cout << "Found '" << me->getName() << "'" << endl;
     //    MonitorElementT<TNamed>* ob = dynamic_cast<MonitorElementT<TNamed>*> (me);
     if ( clone ) {
       char histo[150];
-      sprintf(histo, "ME %s", ((string)(me->getName())).c_str());
+      sprintf(histo, "ME %s", ((std::string)(me->getName())).c_str());
       out = dynamic_cast<TH2F*> (me->getTH2F()->Clone(histo));
     } else {
       out = me->getTH2F();
@@ -282,10 +281,10 @@ TH1F* getHisto(const MonitorElement* me, bool verb,bool clone){
   TH1F* out = NULL;
 
   if ( me ) {      
-    if ( verb ) cout << "Found '" << me->getName() << "'" << endl;
+    if ( verb ) std::cout << "Found '" << me->getName() << "'" << endl;
     if ( clone ) {
       char histo[150];
-      sprintf(histo, "ME %s",((string)(me->getName())).c_str());
+      sprintf(histo, "ME %s",((std::string)(me->getName())).c_str());
       out = dynamic_cast<TH1F*> (me->getTH1F()->Clone(histo));
     } else {
       out = me->getTH1F();
@@ -295,12 +294,12 @@ TH1F* getHisto(const MonitorElement* me, bool verb,bool clone){
 }
 
 
-void histoHTML(int runNo, TH1F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, string htmlDir){
+void histoHTML(int runNo, TH1F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, std::string htmlDir){
   
   if(hist!=NULL){    
-    string imgNameTMB = "";   
+    std::string imgNameTMB = "";   
     imgNameTMB = getIMG(runNo,hist,1,htmlDir,xlab,ylab); 
-    string imgName = "";   
+    std::string imgName = "";   
     imgName = getIMG(runNo,hist,2,htmlDir,xlab,ylab);  
 
     if (imgName.size() != 0 )
@@ -312,11 +311,11 @@ void histoHTML(int runNo, TH1F* hist, const char* xlab, const char* ylab, int wi
   return;
 }
 
-void histoHTML2(int runNo, TH2F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, string htmlDir, bool color){
+void histoHTML2(int runNo, TH2F* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, std::string htmlDir, bool color){
   if(hist!=NULL){
-    string imgNameTMB = "";
+    std::string imgNameTMB = "";
     imgNameTMB = getIMG2(runNo,hist,1,htmlDir,xlab,ylab,color);  
-    string imgName = "";
+    std::string imgName = "";
     imgName = getIMG2(runNo,hist,2,htmlDir,xlab,ylab,color);  
     if (imgName.size() != 0 )
       htmlFile << "<td><a href=\"" <<  imgName << "\"><img src=\"" <<  imgNameTMB << "\"></a></td>" << endl;
@@ -327,7 +326,7 @@ void histoHTML2(int runNo, TH2F* hist, const char* xlab, const char* ylab, int w
   return;
 }
 
-void createXRangeTest(DQMStore* dbe, vector<string>& params){
+void createXRangeTest(DQMStore* dbe, std::vector<std::string>& params){
   if (params.size() < 6) return;
   if(!dbe) return;
 
@@ -348,7 +347,7 @@ void createXRangeTest(DQMStore* dbe, vector<string>& params){
   return;
 }
 
-void createYRangeTest(DQMStore* dbe, vector<string>& params){
+void createYRangeTest(DQMStore* dbe, std::vector<std::string>& params){
   if (params.size() < 6) return;
   if(!dbe) return;
 
@@ -369,7 +368,7 @@ void createYRangeTest(DQMStore* dbe, vector<string>& params){
   return;
 }
 
-void createMeanValueTest(DQMStore* dbe, vector<string>& params){
+void createMeanValueTest(DQMStore* dbe, std::vector<std::string>& params){
   if (params.size() < 7 ) return;
   if(!dbe) return;
 
@@ -393,7 +392,7 @@ void createMeanValueTest(DQMStore* dbe, vector<string>& params){
   return;
 }
 
-void createH2ContentTest(DQMStore* dbe, vector<string>& params){
+void createH2ContentTest(DQMStore* dbe, std::vector<std::string>& params){
   if (params.size() < 2 ) return;
   if(!dbe) return;
 
@@ -416,7 +415,7 @@ void createH2ContentTest(DQMStore* dbe, vector<string>& params){
   return;
 }
 
-void createH2CompTest(DQMStore* dbe, vector<string>& params, TH2F* ref){
+void createH2CompTest(DQMStore* dbe, std::vector<std::string>& params, TH2F* ref){
   if (params.size() < 2 ) return;
   if(ref==NULL) return;
   if(!dbe) return;
@@ -446,10 +445,10 @@ void createH2CompTest(DQMStore* dbe, vector<string>& params, TH2F* ref){
   return;
 }
 
-void htmlErrors(int runNo, string htmlDir, string client, string process, DQMStore* dbe, map<string, vector<QReport*> > mapE, map<string, vector<QReport*> > mapW, map<string, vector<QReport*> > mapO){
+void htmlErrors(int runNo, std::string htmlDir, std::string client, std::string process, DQMStore* dbe, std::map<std::string, std::vector<QReport*> > mapE, std::map<std::string, std::vector<QReport*> > mapW, std::map<std::string, std::vector<QReport*> > mapO){
   if(!dbe) return;
 
-  map<string, vector<QReport*> >::iterator mapIter;
+  std::map<std::string, std::vector<QReport*> >::iterator mapIter;
 
   ofstream errorFile;
   errorFile.open((htmlDir + client+ "Errors.html").c_str());
@@ -466,12 +465,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
   errorFile << "<h2>" << client <<" Errors</h2> " << endl;
 
   for (mapIter=mapE.begin(); mapIter!=mapE.end();mapIter++){
-    string meName = mapIter->first;
-    vector<QReport*> errors = mapIter->second;
+    std::string meName = mapIter->first;
+    std::vector<QReport*> errors = mapIter->second;
     errorFile << "<br>" << endl;     
     errorFile << "<hr>" << endl;
     errorFile << "Monitorable '" << meName << "' has the following errors: <br>" << endl;
-    for(vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
+    for(std::vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
       errorFile << "     "<< (*report)->getQRName() << ": "<< (*report)->getMessage() << endl;
     }
     MonitorElement* me = dbe->get(meName);
@@ -480,12 +479,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
     char* substr = strstr(meName.c_str(), client.c_str());
     if(me->getMeanError(2)==0){
       TH1F* obj1f = getHisto(substr, process.c_str(), dbe);
-      string save = getIMG(runNo,obj1f,1,htmlDir,"X1a","Y1a");
+      std::string save = getIMG(runNo,obj1f,1,htmlDir,"X1a","Y1a");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     else{
       TH2F* obj2f = getHisto2(substr, process.c_str(), dbe);
-      string save = getIMG2(runNo,obj2f,1,htmlDir,"X2a","Y2a");
+      std::string save = getIMG2(runNo,obj2f,1,htmlDir,"X2a","Y2a");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     errorFile << "<br>" << endl;
@@ -509,12 +508,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
   errorFile << "<h2>" << client <<" Warnings</h2> " << endl;
 
   for (mapIter=mapW.begin(); mapIter!=mapW.end();mapIter++){
-    string meName = mapIter->first;
-    vector<QReport*> errors = mapIter->second;
+    std::string meName = mapIter->first;
+    std::vector<QReport*> errors = mapIter->second;
     errorFile << "<br>" << endl;     
     errorFile << "<hr>" << endl;
     errorFile << "Monitorable '" << meName << "' has the following warnings: <BR>" << endl;
-    for(vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
+    for(std::vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
       errorFile << "     "<< (*report)->getQRName() << ": "<< (*report)->getMessage() << endl;
     }
     MonitorElement* me = dbe->get(meName);
@@ -523,12 +522,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
     char* substr = strstr(meName.c_str(), client.c_str());
     if(me->getMeanError(2)==0){
       TH1F* obj1f = getHisto(substr, process.c_str(), dbe);
-      string save = getIMG(runNo,obj1f,1,htmlDir,"X1b","Y1b");
+      std::string save = getIMG(runNo,obj1f,1,htmlDir,"X1b","Y1b");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     else{
       TH2F* obj2f = getHisto2(substr, process.c_str(), dbe);
-      string save = getIMG2(runNo,obj2f,1,htmlDir,"X2b","Y2b");
+      std::string save = getIMG2(runNo,obj2f,1,htmlDir,"X2b","Y2b");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     errorFile << "<br>" << endl;
@@ -551,12 +550,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
   errorFile << "<h2>" << client <<" Messages</h2> " << endl;
 
   for (mapIter=mapO.begin(); mapIter!=mapO.end();mapIter++){
-    string meName = mapIter->first;
-    vector<QReport*> errors = mapIter->second;
+    std::string meName = mapIter->first;
+    std::vector<QReport*> errors = mapIter->second;
     errorFile << "<br>" << endl;     
     errorFile << "<hr>" << endl;
     errorFile << "Monitorable '" << meName << "' has the following messages: <br>" << endl;
-    for(vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
+    for(std::vector<QReport*>::iterator report=errors.begin(); report!=errors.end(); report++){
       errorFile << "     "<< (*report)->getQRName() << ": "<< (*report)->getMessage() << endl;
     }
     errorFile << "<br>" << endl;
@@ -565,12 +564,12 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
     char* substr = strstr(meName.c_str(), client.c_str());
     if(me->getMeanError(2)==0){
       TH1F* obj1f = getHisto(substr, process.c_str(), dbe);
-      string save = getIMG(runNo,obj1f,1,htmlDir,"X1c","Y1c");
+      std::string save = getIMG(runNo,obj1f,1,htmlDir,"X1c","Y1c");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     else{
       TH2F* obj2f = getHisto2(substr, process.c_str(), dbe);
-      string save = getIMG2(runNo,obj2f,1,htmlDir,"X2c","Y2c");
+      std::string save = getIMG2(runNo,obj2f,1,htmlDir,"X2c","Y2c");
       errorFile << "<img src=\"" <<  save << "\">" << endl;
     }
     errorFile << "<br>" << endl;
@@ -587,7 +586,7 @@ void htmlErrors(int runNo, string htmlDir, string client, string process, DQMSto
 
 // TProfile histogram-related stuff
 
-TProfile* getHistoTProfile(string name, string process, DQMStore* dbe_, bool verb, bool clone){
+TProfile* getHistoTProfile(std::string name, std::string process, DQMStore* dbe_, bool verb, bool clone){
   if(!dbe_) return NULL;
   
   char title[150];  
@@ -596,7 +595,7 @@ TProfile* getHistoTProfile(string name, string process, DQMStore* dbe_, bool ver
 
   const MonitorElement* me = dbe_->get(title);
   if (me){      
-    if ( verb ) cout << "Found '" << title << "'" << endl;
+    if ( verb ) std::cout << "Found '" << title << "'" << endl;
     if ( clone ) {
       char histo[150];
       sprintf(histo, "ME %s",name.c_str());
@@ -613,10 +612,10 @@ TProfile* getHistoTProfile(const MonitorElement* me, bool verb,bool clone){
   TProfile* out = NULL;
   
   if ( me ) {      
-    if ( verb ) cout << "Found '" << me->getName() << "'" << endl;
+    if ( verb ) std::cout << "Found '" << me->getName() << "'" << endl;
     if ( clone ) {
       char histo[150];
-      sprintf(histo, "ME %s",((string)(me->getName())).c_str());
+      sprintf(histo, "ME %s",((std::string)(me->getName())).c_str());
       out = dynamic_cast<TProfile*> (me->getTProfile()->Clone(histo));
     } else {
       out = me->getTProfile();
@@ -625,20 +624,20 @@ TProfile* getHistoTProfile(const MonitorElement* me, bool verb,bool clone){
   return out;
 }
 
-string getIMGTProfile(int runNo,TProfile* hist, int size, string htmlDir, const char* xlab, const char* ylab, string opts){
+std::string getIMGTProfile(int runNo,TProfile* hist, int size, std::string htmlDir, const char* xlab, const char* ylab, std::string opts){
 
   if(hist==NULL) {
     printf("getIMG:  This histo is NULL, %s, %s\n",xlab,ylab);
     return "";
   }
 
-  string name = hist->GetTitle();
+  std::string name = hist->GetTitle();
   cleanString(name);
   char dest[512];
   if(runNo>-1) sprintf(dest,"%s - Run %d",name.c_str(),runNo);
   else sprintf(dest,"%s",name.c_str());
   hist->SetTitle(dest);
-  string title = dest;
+  std::string title = dest;
 
   int xwid = 900; int ywid =540;
   if(size==1){
@@ -648,8 +647,8 @@ string getIMGTProfile(int runNo,TProfile* hist, int size, string htmlDir, const 
   TCanvas* can = new TCanvas(dest,dest, xwid, ywid);
 
   parseString(title);
-  string outName = title + ".gif";
-  string saveName = htmlDir + outName;
+  std::string outName = title + ".gif";
+  std::string saveName = htmlDir + outName;
   hist->SetXTitle(xlab);
   hist->SetYTitle(ylab);
   if (opts!="NONE")
@@ -662,12 +661,12 @@ string getIMGTProfile(int runNo,TProfile* hist, int size, string htmlDir, const 
   return outName;
 }
 
-void histoHTMLTProfile(int runNo, TProfile* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, string htmlDir, string opts){
+void histoHTMLTProfile(int runNo, TProfile* hist, const char* xlab, const char* ylab, int width, ofstream& htmlFile, std::string htmlDir, std::string opts){
   
   if(hist!=NULL){    
-    string imgNameTMB = "";   
+    std::string imgNameTMB = "";   
     imgNameTMB = getIMGTProfile(runNo,hist,1,htmlDir,xlab,ylab,opts); 
-    string imgName = "";   
+    std::string imgName = "";   
     imgName = getIMGTProfile(runNo,hist,2,htmlDir,xlab,ylab,opts);  
 
     if (imgName.size() != 0 )
@@ -682,7 +681,7 @@ void histoHTMLTProfile(int runNo, TProfile* hist, const char* xlab, const char* 
 
 // Get Histograms for TProfile2D
 
-TProfile2D* getHistoTProfile2D(string name, string process, DQMStore* dbe_, bool verb, bool clone){
+TProfile2D* getHistoTProfile2D(std::string name, std::string process, DQMStore* dbe_, bool verb, bool clone){
   if(!dbe_) return NULL;
   
   char title[150];  
@@ -691,7 +690,7 @@ TProfile2D* getHistoTProfile2D(string name, string process, DQMStore* dbe_, bool
 
   const MonitorElement* me = dbe_->get(title);
   if (me){      
-    if ( verb ) cout << "Found '" << title << "'" << endl;
+    if ( verb ) std::cout << "Found '" << title << "'" << endl;
     if ( clone ) {
       char histo[150];
       sprintf(histo, "ME %s",name.c_str());
@@ -708,10 +707,10 @@ TProfile2D* getHistoTProfile2D(const MonitorElement* me, bool verb,bool clone){
   TProfile2D* out = NULL;
   
   if ( me ) {      
-    if ( verb ) cout << "Found '" << me->getName() << "'" << endl;
+    if ( verb ) std::cout << "Found '" << me->getName() << "'" << endl;
     if ( clone ) {
       char histo[150];
-      sprintf(histo, "ME %s",((string)(me->getName())).c_str());
+      sprintf(histo, "ME %s",((std::string)(me->getName())).c_str());
       out = dynamic_cast<TProfile2D*> (me->getTProfile2D()->Clone(histo));
     } else {
       out = me->getTProfile2D();
@@ -721,7 +720,7 @@ TProfile2D* getHistoTProfile2D(const MonitorElement* me, bool verb,bool clone){
 }
 
 // Get histograms for TH3F
-TH3F* getHistoTH3F(string name, string process, DQMStore* dbe_, bool verb, bool clone){
+TH3F* getHistoTH3F(std::string name, std::string process, DQMStore* dbe_, bool verb, bool clone){
   if(!dbe_) return NULL;
   
   char title[150];  
@@ -730,7 +729,7 @@ TH3F* getHistoTH3F(string name, string process, DQMStore* dbe_, bool verb, bool 
 
   const MonitorElement* me = dbe_->get(title);
   if (me){      
-    if ( verb ) cout << "Found '" << title << "'" << endl;
+    if ( verb ) std::cout << "Found '" << title << "'" << endl;
     if ( clone ) {
       char histo[150];
       sprintf(histo, "ME %s",name.c_str());
@@ -747,10 +746,10 @@ TH3F* getHistoTH3F(const MonitorElement* me, bool verb,bool clone){
   TH3F* out = NULL;
   
   if ( me ) {      
-    if ( verb ) cout << "Found '" << me->getName() << "'" << endl;
+    if ( verb ) std::cout << "Found '" << me->getName() << "'" << endl;
     if ( clone ) {
       char histo[150];
-      sprintf(histo, "ME %s",((string)(me->getName())).c_str());
+      sprintf(histo, "ME %s",((std::string)(me->getName())).c_str());
       out = dynamic_cast<TH3F*> (me->getTH3F()->Clone(histo));
     } else {
       out = me->getTH3F();

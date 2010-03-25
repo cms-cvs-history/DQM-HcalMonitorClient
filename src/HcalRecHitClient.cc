@@ -11,14 +11,11 @@
 /*
  * \file HcalRecHitClient.cc
  * 
- * $Date: 2010/03/11 11:20:14 $
- * $Revision: 1.47.4.10 $
+ * $Date: 2010/03/20 20:55:45 $
+ * $Revision: 1.47.4.11 $
  * \author J. Temple
  * \brief Dead Cell Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalRecHitClient::HcalRecHitClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalRecHitClient::HcalRecHitClient(std::string myname, const edm::ParameterSet& 
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("RecHitFolder","RecHitMonitor_Hcal/"); // RecHitMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<std::string>("RecHitFolder","RecHitMonitor_Hcal/"); // RecHitMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -73,7 +70,7 @@ void HcalRecHitClient::analyze()
 
   for (int i=0;i<4;++i)
     {
-      string s=subdir_+"Distributions_AllRecHits/"+name[i]+"RecHit Occupancy";
+      std::string s=subdir_+"Distributions_AllRecHits/"+name[i]+"RecHit Occupancy";
       me=dqmStore_->get(s.c_str());
       if (me==0) {if (debug_>0) std::cout <<"Could not get histogram "<<s<<endl; gotHistos=false; break;}
       OccupancyByDepth[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, OccupancyByDepth[i], debug_);
@@ -354,7 +351,7 @@ void HcalRecHitClient::calculateProblems()
 
 void HcalRecHitClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalRecHitClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

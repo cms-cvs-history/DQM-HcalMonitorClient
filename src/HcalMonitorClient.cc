@@ -1,8 +1,8 @@
 /*
  * \file HcalMonitorClient.cc
  * 
- * $Date: 2010/03/20 20:55:44 $
- * $Revision: 1.92.2.20 $
+ * $Date: 2010/03/24 18:52:58 $
+ * $Revision: 1.92.2.21 $
  * \author J. Temple
  * 
  */
@@ -49,25 +49,24 @@
 #include "TROOT.h"
 #include "TH1.h"
 
-using namespace cms;
-using namespace edm;
-using namespace std;
+//'using' declarations should only be used within classes/functions, and 'using namespace std;' should not be used,
+// according to Bill Tanenbaum  (DQM development hypernews, 25 March 2010)
 
-HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
+HcalMonitorClient::HcalMonitorClient(const edm::ParameterSet& ps)
 {
   debug_ = ps.getUntrackedParameter<int>("debug",0);
-  inputFile_ = ps.getUntrackedParameter<string>("inputFile","");
+  inputFile_ = ps.getUntrackedParameter<std::string>("inputFile","");
   mergeRuns_ = ps.getUntrackedParameter<bool>("mergeRuns", false);
   cloneME_ = ps.getUntrackedParameter<bool>("cloneME", true);
   prescaleFactor_ = ps.getUntrackedParameter<int>("prescaleFactor", -1);
-  prefixME_ = ps.getUntrackedParameter<string>("subSystemFolder", "Hcal/");
+  prefixME_ = ps.getUntrackedParameter<std::string>("subSystemFolder", "Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
   enableCleanup_ = ps.getUntrackedParameter<bool>("enableCleanup", false);
-  enabledClients_ = ps.getUntrackedParameter<vector<string> >("enabledClients", enabledClients_);
+  enabledClients_ = ps.getUntrackedParameter<std::vector<std::string> >("enabledClients", enabledClients_);
 
   updateTime_ = ps.getUntrackedParameter<int>("UpdateTime",0);
-  baseHtmlDir_ = ps.getUntrackedParameter<string>("baseHtmlDir", "");
+  baseHtmlDir_ = ps.getUntrackedParameter<std::string>("baseHtmlDir", "");
   htmlUpdateTime_ = ps.getUntrackedParameter<int>("htmlUpdateTime", 0);
   htmlFirstUpdate_ = ps.getUntrackedParameter<int>("htmlFirstUpdate",20);
   databasedir_   = ps.getUntrackedParameter<std::string>("databaseDir","");
@@ -91,39 +90,39 @@ HcalMonitorClient::HcalMonitorClient(const ParameterSet& ps)
   // Add all relevant clients
   //clients_.reserve(12); // any reason to reserve ahead of time?
 
-  clients_.push_back(new HcalBaseDQClient((string)"HcalMonitorModule",ps));
+  clients_.push_back(new HcalBaseDQClient((std::string)"HcalMonitorModule",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DeadCellMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDeadCellClient((string)"DeadCellMonitor",ps));
+    clients_.push_back(new HcalDeadCellClient((std::string)"DeadCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"HotCellMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalHotCellClient((string)"HotCellMonitor",ps));
+    clients_.push_back(new HcalHotCellClient((std::string)"HotCellMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"RecHitMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalRecHitClient((string)"RecHitMonitor",ps));
+    clients_.push_back(new HcalRecHitClient((std::string)"RecHitMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DigiMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDigiClient((string)"DigiMonitor",ps));
+    clients_.push_back(new HcalDigiClient((std::string)"DigiMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"RawDataMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalRawDataClient((string)"RawDataMonitor",ps));
+    clients_.push_back(new HcalRawDataClient((std::string)"RawDataMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"TrigPrimMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalTrigPrimClient((string)"TrigPrimMonitor",ps));
+    clients_.push_back(new HcalTrigPrimClient((std::string)"TrigPrimMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"NZSMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalNZSClient((string)"NZSMonitor",ps));
+    clients_.push_back(new HcalNZSClient((std::string)"NZSMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"BeamMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalBeamClient((string)"BeamMonitor",ps));
+    clients_.push_back(new HcalBeamClient((std::string)"BeamMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagPedestalMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDetDiagPedestalClient((string)"DetDiagPedestalMonitor",ps));
+    clients_.push_back(new HcalDetDiagPedestalClient((std::string)"DetDiagPedestalMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagLaserMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDetDiagLaserClient((string)"DetDiagLaserMonitor",ps));
+    clients_.push_back(new HcalDetDiagLaserClient((std::string)"DetDiagLaserMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagLEDMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDetDiagLEDClient((string)"DetDiagLEDMonitor",ps));
+    clients_.push_back(new HcalDetDiagLEDClient((std::string)"DetDiagLEDMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagNoiseMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDetDiagNoiseMonitorClient((string)"DetDiagNoiseMonitor",ps));
+    clients_.push_back(new HcalDetDiagNoiseMonitorClient((std::string)"DetDiagNoiseMonitor",ps));
   if (find(enabledClients_.begin(), enabledClients_.end(),"DetDiagTimingMonitor")!=enabledClients_.end())
-    clients_.push_back(new HcalDetDiagTimingClient((string)"DetDiagTimingMonitor",ps));
+    clients_.push_back(new HcalDetDiagTimingClient((std::string)"DetDiagTimingMonitor",ps));
 
 
 
 
   if (find(enabledClients_.begin(), enabledClients_.end(),"Summary")!=enabledClients_.end())
-    summaryClient_ = new HcalSummaryClient((string)"ReportSummaryClient",ps);
+    summaryClient_ = new HcalSummaryClient((std::string)"ReportSummaryClient",ps);
   
 } // HcalMonitorClient constructor
 
@@ -154,7 +153,7 @@ void HcalMonitorClient::beginJob(void)
 
   // get hold of back-end interface
 
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
 
   if ( inputFile_.size() != 0 ) 
     {
@@ -170,7 +169,7 @@ void HcalMonitorClient::beginJob(void)
 } // void HcalMonitorClient::beginJob(void)
 
 
-void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c) 
+void HcalMonitorClient::beginRun(const edm::Run& r, const edm::EventSetup& c) 
 {
   if (debug_>0) std::cout <<"<HcalMonitorClient::beginRun(r,c)>"<<std::endl;
   begin_run_ = true;
@@ -195,7 +194,7 @@ void HcalMonitorClient::beginRun(const Run& r, const EventSetup& c)
       dqmStore_->setCurrentFolder(prefixME_+"HcalInfo/ChannelStatus");
       ChannelStatus=new EtaPhiHists;
       ChannelStatus->setup(dqmStore_,"ChannelStatus");
-      stringstream x;
+      std::stringstream x;
       for (unsigned int d=0;d<ChannelStatus->depth.size();++d)
 	{
 	  ChannelStatus->depth[d]->Reset();
@@ -285,7 +284,7 @@ void HcalMonitorClient::beginRun()
   dqmStore_->setCurrentFolder(prefixME_+"HcalInfo");
   ChannelStatus=new EtaPhiHists;
   ChannelStatus->setup(dqmStore_,"ChannelStatus");
-  stringstream x;
+  std::stringstream x;
   for (unsigned int d=0;d<ChannelStatus->depth.size();++d)
     {
       x<<"1+log2(status) for HCAL depth "<<d+1;
@@ -299,7 +298,7 @@ void HcalMonitorClient::setup(void)
   // no setup required
 }
 
-void HcalMonitorClient::beginLuminosityBlock(const LuminosityBlock &l, const EventSetup &c) 
+void HcalMonitorClient::beginLuminosityBlock(const edm::LuminosityBlock &l, const edm::EventSetup &c) 
 {
   if (debug_>0) std::cout <<"<HcalMonitorClient::beginLuminosityBlock>"<<std::endl;
 } // void HcalMonitorClient::beginLuminosityBlock
@@ -330,7 +329,7 @@ void HcalMonitorClient::analyze(int LS)
 } // void HcalMonitorClient::analyze()
 
 
-void HcalMonitorClient::endLuminosityBlock(const LuminosityBlock &l, const EventSetup &c) 
+void HcalMonitorClient::endLuminosityBlock(const edm::LuminosityBlock &l, const edm::EventSetup &c) 
 {
   if (debug_>0) std::cout <<"<HcalMonitorClient::endLuminosityBlock>"<<std::endl;
   current_time_ = time(NULL);
@@ -385,7 +384,7 @@ void HcalMonitorClient::endRun(void)
     this->writeHtml();
 }
 
-void HcalMonitorClient::endRun(const Run& r, const EventSetup& c) 
+void HcalMonitorClient::endRun(const edm::Run& r, const edm::EventSetup& c) 
 {
   this->analyze();
   this->endRun();
@@ -432,7 +431,7 @@ void HcalMonitorClient::writeHtml()
 
   if(run_!=-1) sprintf(tmp, "DQM_%s_R%09d_%i", prefixME_.substr(0,prefixME_.size()-1).c_str(),run_,htmlcounter_);
   else sprintf(tmp, "DQM_%s_R%09d_%i", prefixME_.substr(0,prefixME_.size()-1).c_str(),0,htmlcounter_);
-  string htmlDir = baseHtmlDir_ + "/" + tmp + "/";
+  std::string htmlDir = baseHtmlDir_ + "/" + tmp + "/";
   system(("/bin/mkdir -p " + htmlDir).c_str());
 
   ++htmlcounter_;
@@ -499,14 +498,14 @@ void HcalMonitorClient::writeHtml()
 void HcalMonitorClient::writeChannelStatus()
 {
   if (databasedir_.size()==0) return;
-  if (debug_>0) std::cout <<"<HcalMonitorClient::writeDBfile>  Writing file for database"<<endl;
+  if (debug_>0) std::cout <<"<HcalMonitorClient::writeDBfile>  Writing file for database"<<std::endl;
 
   std::map<HcalDetId, unsigned int> myquality; //map of quality flags as reported by each client
   // Get status from all channels (we need to store all channels in case a bad channel suddenly becomes good)
   for (std::vector<HcalBaseDQClient*>::size_type i=0;i<clients_.size();++i)
     clients_[i]->updateChannelStatus(myquality);
 
-  if (debug_>0) std::cout <<"<HcalMonitorClient::writeChannelStatus()>  myquality size = "<<myquality.size()<<endl;
+  if (debug_>0) std::cout <<"<HcalMonitorClient::writeChannelStatus()>  myquality size = "<<myquality.size()<<std::endl;
 
   std::vector<DetId> mydetids = chanquality_->getAllChannels();
   HcalChannelQuality* newChanQual = new HcalChannelQuality();
@@ -544,7 +543,7 @@ void HcalMonitorClient::writeChannelStatus()
   //file <<databasedir_<<"HcalDQMstatus_"<<run_<<".txt";
   file <<databasedir_<<"HcalDQMstatus.txt";
   std::ofstream outStream(file.str().c_str());
-  outStream<<"###  Run # "<<run_<<endl;
+  outStream<<"###  Run # "<<run_<<std::endl;
   HcalDbASCIIIO::dumpObject (outStream, (*newChanQual));
   return;
 } // void HcalMonitorClient::writeChannelStatus()
@@ -606,7 +605,6 @@ void HcalMonitorClient::PlotPedestalValues(const HcalDbService& cond)
 						  (float)calibs_.pedestal(capid),
 						  capid);
 		      ADC_ped+=temp_ADC;
-
 		      // Pedestals assumed to be read out in fC
 		      temp_fC=pedw->getSigma(capid,capid);
 		      fC_width+=temp_fC;
@@ -626,9 +624,9 @@ void HcalMonitorClient::PlotPedestalValues(const HcalDbService& cond)
 
 		  if (debug_>1)
 		    {
-		      std::cout <<"<HcalMonitorClient::PlotPedestalValues> HcalDet ID = "<<(HcalSubdetector)subdet<<": ("<<ieta<<", "<<iphi<<", "<<depth<<")"<<endl;
-		      std::cout <<"\tADC pedestal = "<<ADC_ped<<" +/- "<<ADC_width<<endl;
-		      std::cout <<"\tfC pedestal = "<<fC_ped<<" +/- "<<fC_width<<endl;
+		      std::cout <<"<HcalMonitorClient::PlotPedestalValues> HcalDet ID = "<<(HcalSubdetector)subdet<<": ("<<ieta<<", "<<iphi<<", "<<depth<<")"<<std::endl;
+		      std::cout <<"\tADC pedestal = "<<ADC_ped<<" +/- "<<ADC_width<<std::endl;
+		      std::cout <<"\tfC pedestal = "<<fC_ped<<" +/- "<<fC_width<<std::endl;
 		    }
 		  // Shift HF by -/+1 when filling eta-phi histograms
 		  int zside=0;

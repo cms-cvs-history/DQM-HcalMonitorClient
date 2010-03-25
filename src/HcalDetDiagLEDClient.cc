@@ -11,14 +11,11 @@
 /*
  * \file HcalDetDiagLEDClient.cc
  * 
- * $Date: 2010/03/10 14:21:17 $
- * $Revision: 1.4.4.1 $
+ * $Date: 2010/03/20 20:55:43 $
+ * $Revision: 1.4.4.2 $
  * \author J. Temple
  * \brief Hcal DetDiagLED Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalDetDiagLEDClient::HcalDetDiagLEDClient(std::string myname, const edm::Parame
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DetDiagLEDFolder","DetDiagLEDMonitor_Hcal/"); // DetDiagLEDMonitor_Hcal/
+  subdir_                = ps.getUntrackedParameter<std::string>("DetDiagLEDFolder","DetDiagLEDMonitor_Hcal/"); // DetDiagLEDMonitor_Hcal/
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -94,7 +91,7 @@ void HcalDetDiagLEDClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
-      string s=subdir_+name[i]+" Problem Bad Laser Timing";
+      std::string s=subdir_+name[i]+" Problem Bad Laser Timing";
       me=dqmStore_->get(s.c_str());
       if (me!=0) BadTiming[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadTiming[i], debug_);
       else if (debug_>0) std::cout <<"<HcalDetDiagLEDClient::analyze> could not get histogram '"<<s<<"'"<<std::endl;
@@ -189,7 +186,7 @@ void HcalDetDiagLEDClient::calculateProblems()
 
 void HcalDetDiagLEDClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalDetDiagLEDClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

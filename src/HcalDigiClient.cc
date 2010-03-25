@@ -11,14 +11,11 @@
 /*
  * \file HcalDigiClient.cc
  * 
- * $Date: 2010/03/11 11:20:14 $
- * $Revision: 1.61.4.4 $
+ * $Date: 2010/03/20 20:55:44 $
+ * $Revision: 1.61.4.5 $
  * \author J. Temple
  * \brief DigiClient class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalDigiClient::HcalDigiClient(std::string myname)
 {
@@ -30,10 +27,10 @@ HcalDigiClient::HcalDigiClient(std::string myname, const edm::ParameterSet& ps)
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DigiFolder","DigiMonitor_Hcal/"); // DigiMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<std::string>("DigiFolder","DigiMonitor_Hcal/"); // DigiMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -59,7 +56,7 @@ void HcalDigiClient::analyze()
   // Get Pawel's timing plots to form averages
   TH2F* TimingStudyTime=0;
   TH2F* TimingStudyOcc=0;
-  string s=subdir_+"HFTimingStudy/sumplots/HFTiming_Total_Time";
+  std::string s=subdir_+"HFTimingStudy/sumplots/HFTiming_Total_Time";
   
   MonitorElement* me=dqmStore_->get(s.c_str());
   if (me!=0)
@@ -119,7 +116,7 @@ void HcalDigiClient::calculateProblems()
   MonitorElement* me;
   for (int i=0;i<4;++i)
     {
-      string s=subdir_+"bad_digis/bad_digi_occupancy/"+name[i]+"Bad Digi Map";
+      std::string s=subdir_+"bad_digis/bad_digi_occupancy/"+name[i]+"Bad Digi Map";
       me=dqmStore_->get(s.c_str());
       if (me==0) 
 	{
@@ -211,7 +208,7 @@ void HcalDigiClient::calculateProblems()
 
 void HcalDigiClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalDigiClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;

@@ -15,14 +15,11 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2010/03/11 11:20:14 $
- * $Revision: 1.89.2.7 $
+ * $Date: 2010/03/12 17:57:36 $
+ * $Revision: 1.89.2.8 $
  * \author J. Temple
  * \brief Summary Client class
  */
-
-using namespace std;
-using namespace edm;
 
 HcalSummaryClient::HcalSummaryClient(std::string myname)
 {
@@ -40,10 +37,10 @@ HcalSummaryClient::HcalSummaryClient(std::string myname, const edm::ParameterSet
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("SummaryFolder","EventInfo/"); // SummaryMonitor_Hcal  
+  subdir_                = ps.getUntrackedParameter<std::string>("SummaryFolder","EventInfo/"); // SummaryMonitor_Hcal  
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -359,7 +356,7 @@ void HcalSummaryClient::fillReportSummary(int LS)
 
 void HcalSummaryClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   // set total number of cells in each subdetector
   subdetCells_.insert(make_pair("HB",2592));
   subdetCells_.insert(make_pair("HE",2592));

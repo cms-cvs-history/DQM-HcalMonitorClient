@@ -14,8 +14,8 @@
 /*
  * \file HcalDetDiagLaserClient.cc
  * 
- * $Date: 2010/03/16 17:04:37 $
- * $Revision: 1.3.4.4 $
+ * $Date: 2010/03/20 20:55:43 $
+ * $Revision: 1.3.4.5 $
  * \author J. Temple
  * \brief Hcal DetDiagLaser Client class
  */
@@ -31,8 +31,7 @@ Raddam_ch RADDAM_CH[56]={{-30,15},{-32,15},{-34,15},{-36,15},{-38,15},{-40,15},{
                          {30, 21},{32, 21},{34, 21},{36, 21},{38, 21},{40, 19},{41, 19},
                          {30, 37},{32, 37},{34, 37},{36, 37},{38, 37},{40, 35},{41, 35},
                          {30, 57},{32, 57},{34, 57},{36, 57},{38, 57},{40, 55},{41, 55}};
-using namespace std;
-using namespace edm;
+
 
 HcalDetDiagLaserClient::HcalDetDiagLaserClient(std::string myname)
 {
@@ -44,10 +43,10 @@ HcalDetDiagLaserClient::HcalDetDiagLaserClient(std::string myname, const edm::Pa
   name_=myname;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
-  subdir_                = ps.getUntrackedParameter<string>("DetDiagLaserFolder","DetDiagLaserMonitor_Hcal/"); // DetDiagLaserMonitor_Hcal/
+  subdir_                = ps.getUntrackedParameter<std::string>("DetDiagLaserFolder","DetDiagLaserMonitor_Hcal/"); // DetDiagLaserMonitor_Hcal/
   if (subdir_.size()>0 && subdir_.substr(subdir_.size()-1,subdir_.size())!="/")
     subdir_.append("/");
   subdir_=prefixME_+subdir_;
@@ -109,7 +108,7 @@ void HcalDetDiagLaserClient::calculateProblems()
     {
       BadTiming[i]=0;
       BadEnergy[i]=0;
-      string s=subdir_+name[i]+" Problem Bad Laser Timing";
+      std::string s=subdir_+name[i]+" Problem Bad Laser Timing";
       me=dqmStore_->get(s.c_str());
       if (me!=0) BadTiming[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadTiming[i], debug_);
       else if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::calculateProblems> could not get histogram '"<<s<<"'"<<std::endl;
@@ -199,7 +198,7 @@ void HcalDetDiagLaserClient::calculateProblems()
 
 void HcalDetDiagLaserClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalDetDiagLaserClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
@@ -363,7 +362,7 @@ static void printTableTail(ofstream& file){
 }
 
 bool HcalDetDiagLaserClient::validHtmlOutput(){
-  string s=subdir_+"HcalDetDiagLaserMonitor Event Number";
+  std::string s=subdir_+"HcalDetDiagLaserMonitor Event Number";
   MonitorElement *me = dqmStore_->get(s.c_str());
   int n=0;
   if ( me ) {
@@ -373,7 +372,7 @@ bool HcalDetDiagLaserClient::validHtmlOutput(){
   if(n<100) return false;
   return true;
 }
-void HcalDetDiagLaserClient::htmlOutput(string htmlDir){
+void HcalDetDiagLaserClient::htmlOutput(std::string htmlDir){
   if(dqmStore_==0){
       if (debug_>0) std::cout <<"<HcalDetDiagLaserClient::htmlOutput> dqmStore object does not exist!"<<std::endl;
       return;
@@ -386,7 +385,7 @@ void HcalDetDiagLaserClient::htmlOutput(string htmlDir){
   HcalElectronicsMap emap=lmap.generateHcalElectronicsMap();
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-  string ref_run,s;
+  std::string ref_run,s;
   MonitorElement* me;
   TH1F *hbheEnergy=0;
   TH1F *hbheTiming=0;
@@ -501,7 +500,7 @@ void HcalDetDiagLaserClient::htmlOutput(string htmlDir){
   s=subdir_+"HcalDetDiagLaserMonitor Reference Run";
   me = dqmStore_->get(s.c_str());
   if(me) {
-    string s=me->valueString();
+    std::string s=me->valueString();
     char str[200]; 
     sscanf((s.substr(2,s.length()-2)).c_str(), "%s", str);
     ref_run=str;
@@ -530,7 +529,7 @@ void HcalDetDiagLaserClient::htmlOutput(string htmlDir){
   for(int i=0;i<4;++i){
       BadTiming_val[i]=0;
       BadEnergy_val[i]=0;
-      string s=subdir_+"Plots for client/"+name[i]+" Laser Timing difference";
+      std::string s=subdir_+"Plots for client/"+name[i]+" Laser Timing difference";
       me=dqmStore_->get(s.c_str());
       if (me!=0) BadTiming_val[i]=HcalUtilsClient::getHisto<TH2F*>(me, cloneME_, BadTiming_val[i], debug_); else return;
       s=subdir_+"Plots for client/"+name[i]+" Laser Energy difference";
@@ -769,7 +768,7 @@ void HcalDetDiagLaserClient::htmlOutput(string htmlDir){
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   ofstream htmlFile;
-  string outfile=htmlDir+name_+".html";
+  std::string outfile=htmlDir+name_+".html";
   htmlFile.open(outfile.c_str());
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   gROOT->SetBatch(true);

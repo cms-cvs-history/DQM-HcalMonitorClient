@@ -4,15 +4,12 @@
 #include <iostream>
 #include <fstream>
 
-using namespace std;
-using namespace edm;
-
 HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
 {
   name_=s;
   enableCleanup_         = ps.getUntrackedParameter<bool>("enableCleanup",false);
   debug_                 = ps.getUntrackedParameter<int>("debug",0);
-  prefixME_              = ps.getUntrackedParameter<string>("subSystemFolder","Hcal/");
+  prefixME_              = ps.getUntrackedParameter<std::string>("subSystemFolder","Hcal/");
   if (prefixME_.substr(prefixME_.size()-1,prefixME_.size())!="/")
     prefixME_.append("/");
 
@@ -32,7 +29,7 @@ HcalBaseDQClient::HcalBaseDQClient(std::string s, const edm::ParameterSet& ps)
 
 void HcalBaseDQClient::beginJob()
 {
-  dqmStore_ = Service<DQMStore>().operator->();
+  dqmStore_ = edm::Service<DQMStore>().operator->();
   if (debug_>0) 
     {
       std::cout <<"<HcalBaseDQClient::beginJob()>  Displaying dqmStore directory structure:"<<std::endl;
@@ -64,7 +61,7 @@ bool HcalBaseDQClient::validHtmlOutput()
   return validHtmlOutput_;
 }
 
-void HcalBaseDQClient::htmlOutput(string htmlDir)
+void HcalBaseDQClient::htmlOutput(std::string htmlDir)
 {
   if (dqmStore_==0) 
     {
@@ -89,7 +86,7 @@ void HcalBaseDQClient::htmlOutput(string htmlDir)
     } // for (int i=0;i<105;++i)
 
   ofstream htmlFile;
-  string outfile=htmlDir+name_+".html";
+  std::string outfile=htmlDir+name_+".html";
   htmlFile.open(outfile.c_str());
 
   // html page header
