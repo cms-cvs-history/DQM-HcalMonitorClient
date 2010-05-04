@@ -573,7 +573,7 @@ void HcalBeamClient::analyze(void)
     } //hot cell histogram found
 
   FillUnphysicalHEHFBins(ProblemCellsByDepth);
-  FillUnphysicalHEHFBins(ProblemCells);
+  if (ProblemCells) FillUnphysicalHEHFBins(ProblemCells);
 
   return;
 } // void HcalBeamClient::analyze(void)
