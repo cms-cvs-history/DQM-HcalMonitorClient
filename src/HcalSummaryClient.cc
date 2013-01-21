@@ -15,8 +15,8 @@
 /*
  * \file HcalSummaryClient.cc
  * 
- * $Date: 2012/06/18 08:23:10 $
- * $Revision: 1.107 $
+ * $Date: 2012/07/08 13:32:47 $
+ * $Revision: 1.110 $
  * \author J. Temple
  * \brief Summary Client class
  */
@@ -219,16 +219,19 @@ void HcalSummaryClient::analyze(int LS)
   // find the RBX-indices, and how long the data-losses lasted
   float ignoreDeadRate[156]={0.};
 
-  for (int i=1;i<=checkIgnore->GetNbinsY();++i)   // RBX list
-    for (int j=2;j<=checkIgnore->GetNbinsX();++j) // LS list, start from LS=2
-      if ( checkIgnore->GetBinContent(j,i)>0 )
-	{
-	  if(checkIgnore->GetBinContent(j-1,i)<1 || (checkIgnore->GetBinContent(j-1,i)>0 && checkIgnore->GetBinContent(j-2,i)<1))
-	    ignoreDeadRate[i]=72.;
-	  
-	  if(checkIgnore->GetBinContent(j-1,i)>0 && checkIgnore->GetBinContent(j-2,i)>0 )
-	    {ignoreDeadRate[i] = 0.; break;}
-	}
+  if (checkIgnore!=0)
+    {
+      for (int i=1;i<=checkIgnore->GetNbinsY();++i)   // RBX list
+	for (int j=2;j<=checkIgnore->GetNbinsX();++j) // LS list, start from LS=2
+	  if ( checkIgnore->GetBinContent(j,i)>0 )
+	    {
+	      if(checkIgnore->GetBinContent(j-1,i)<1 || (checkIgnore->GetBinContent(j-1,i)>0 && checkIgnore->GetBinContent(j-2,i)<1))
+		ignoreDeadRate[i]=72.;
+	      
+	      if(checkIgnore->GetBinContent(j-1,i)>0 && checkIgnore->GetBinContent(j-2,i)>0 )
+		{ignoreDeadRate[i] = 0.; break;}
+	    }
+    }
   
   float ignoreShortDeadRate_HB=0;
   float ignoreShortDeadRate_HE=0;
@@ -286,8 +289,10 @@ void HcalSummaryClient::analyze(int LS)
 		  for (unsigned int cl=0;cl<clients_.size();++cl)
 		    {
 		      if (clients_[cl]->ProblemCellsByDepth==0) continue;
-
+		      
+		      if(clients_[cl]->name()=="ZDCMonitor") continue;
 		      if ((clients_[cl]->ProblemCellsByDepth)->depth[d]==0) continue;
+
 		      if ((clients_[cl]->ProblemCellsByDepth)->depth[d]->getBinContent(eta,phi)>clients_[cl]->minerrorrate_)
 			{
 			  // QPLL unlocking channels, have to ignore unpacker errors (fix requires opening CMS)
@@ -371,6 +376,8 @@ void HcalSummaryClient::analyze(int LS)
 		      // We know that first element is HcalMonitorModule info, which has
 		      // no problem cells defined.  Create some, or start counting from cl=1?
 		      if (debug_>4 && eta==1 && phi==1) std::cout <<"Checking summary for client "<<clients_[cl]->name()<<std::endl;
+		      if(clients_[cl]->name()=="ZDCMonitor") continue;
+
 		      if (clients_[cl]->ProblemCellsByDepth==0) continue;
 
 		      if ((clients_[cl]->ProblemCellsByDepth)->depth[d]==0) continue;
@@ -431,12 +438,12 @@ void HcalSummaryClient::analyze(int LS)
       it=subdetCells_.find("HB");
       totalcells+=it->second;
       status_HB_= 1-(status_HB_/it->second);
-      status_HB_=status_HB_+ignoreShortDeadRate_HB;
+      status_HB_=std::min(1.0, status_HB_+ignoreShortDeadRate_HB);
       for (unsigned int i=0;i<clients_.size();++i)
 	{
 	  localHB[i]=1-(1.*localHB[i]/it->second);
 	  if(clients_[i]->name()=="DeadCellMonitor") // correct the rate, removing the effect of short RBX losses
-	    localHB[i]=localHB[i]+ignoreShortDeadRate_HB;
+	    localHB[i]=std::min(1.0, localHB[i]+ignoreShortDeadRate_HB);
 	  localHB[i]=std::max(0.,localHB[i]);
 	}
       status_HB_=std::max(0.,status_HB_); // converts fraction of bad channels to good fraction
@@ -449,12 +456,12 @@ void HcalSummaryClient::analyze(int LS)
       it=subdetCells_.find("HE");
       totalcells+=it->second;
       status_HE_= 1-(status_HE_/it->second);
-      status_HE_=status_HE_+ignoreShortDeadRate_HE;
+      status_HE_=std::min(1.0, status_HE_+ignoreShortDeadRate_HE);
       for (unsigned int i=0;i<clients_.size();++i)
 	{
 	  localHE[i]=1-(1.*localHE[i]/it->second);
 	  if(clients_[i]->name()=="DeadCellMonitor") // correct the rate, removing the effect of short RBX losses
-	    localHE[i]=localHE[i]+ignoreShortDeadRate_HE;
+	    localHE[i]=std::min(1.0, localHE[i]+ignoreShortDeadRate_HE);
 	  localHE[i]=std::max(0.,localHE[i]);
 	}
       status_HE_=std::max(0.,status_HE_); // converts fraction of bad channels to good fraction
